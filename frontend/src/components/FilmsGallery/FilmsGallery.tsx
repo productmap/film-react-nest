@@ -10,7 +10,8 @@ export type FilmsGalleryProps = {
 
 export function FilmsGallery({items, selected = null, onClick}: FilmsGalleryProps) {
     return (
-        <footer className={styles.gallery}>
+        <main className={styles.gallery}>
+            {items.length === 0 && <p>Ничего не найдено</p>}
             {items.map((item) => (
                 <Card
                     key={item.id}
@@ -23,6 +24,6 @@ export function FilmsGallery({items, selected = null, onClick}: FilmsGalleryProp
                     }}
                 />
             ))}
-        </footer>
+        </main>
     );
 }

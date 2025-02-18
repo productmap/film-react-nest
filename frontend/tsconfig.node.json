@@ -7,7 +7,11 @@
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "strict": true,
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@scss/*": ["./src/scss/*"],
+      "@components": ["./src/components/index.ts"],
+    }
   },
   "include": ["vite.config.ts"]
 }

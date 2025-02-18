@@ -1,5 +1,6 @@
-@use 'variables' as *;
-@use 'mixins';
+@use '@scss/variables' as *;
+@use '@scss/mixins';
+@use "sass:color";
 
 .form {
   @include mixins.flex(column);
@@ -33,7 +34,8 @@
     }
 
     &::placeholder {
-      color: lighten($primaryLight, 23%);
+      color: color.adjust($primaryLight, $lightness: 23%)
+      //color: lighten($primaryLight, 23%);
     }
   }
 }
