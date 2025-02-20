@@ -2,23 +2,19 @@ import { Module, OnModuleInit } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { FilmsController } from './films.controller';
 import { FilmsService } from './films.service';
-import { Film, FilmSchema } from './schemas/film.schema';
-import { Schedule, ScheduleSchema } from './schemas/schedule.schema';
+import { FilmsRepository } from './films.repository';
+import { Film, FilmSchema } from './films.schema';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Film.name, schema: FilmSchema },
-      { name: Schedule.name, schema: ScheduleSchema },
-    ]),
+    MongooseModule.forFeature([{ name: Film.name, schema: FilmSchema }]),
   ],
   controllers: [FilmsController],
-  providers: [FilmsService],
+  providers: [FilmsService, FilmsRepository],
   exports: [FilmsService],
 })
-// export class FilmsModule {}
 export class FilmsModule implements OnModuleInit {
   constructor(private readonly filmsService: FilmsService) {}
 

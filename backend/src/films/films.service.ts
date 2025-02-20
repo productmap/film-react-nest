@@ -1,36 +1,32 @@
 import { Injectable } from '@nestjs/common';
-import { Model } from 'mongoose';
-import { Film, FilmDocument } from './schemas/film.schema';
-import { FilmDto } from './dto/film.dto';
-import { ScheduleDto } from './dto/schedule.dto';
-import { InjectModel } from '@nestjs/mongoose';
+import { FilmsRepository } from './films.repository';
+import { MovieDto, SessionDto } from './films.dto';
 
 @Injectable()
 export class FilmsService {
-  constructor(@InjectModel(Film.name) private filmModel: Model<FilmDocument>) {}
+  constructor(private readonly filmsRepository: FilmsRepository) {}
 
   async importFilms(filmsData: any[]): Promise<void> {
-    await this.filmModel.insertMany(filmsData);
+    await this.filmsRepository.insertMany(filmsData);
   }
 
   async countFilms(): Promise<number> {
-    return this.filmModel.countDocuments().exec();
+    return this.filmsRepository.countFilms();
   }
 
-  async findAll(): Promise<{ items: FilmDto[] }> {
-    const films = await this.filmModel.find().lean().exec();
-    return { items: films.map((film) => this.mapFilmDocumentToDto(film)) };
+  async findAll(): Promise<MovieDto[]> {
+    const films = await this.filmsRepository.findAll();
+    return films.map((film) => this.mapFilmDocumentToDto(film));
   }
 
-  async getScheduleByFilmId(filmId: string): Promise<ScheduleDto[]> {
-    const film = await this.filmModel.findOne({ id: filmId }).lean().exec();
+  async getScheduleByFilmId(filmId: string): Promise<SessionDto[]> {
+    const film = await this.filmsRepository.findFilmById(filmId);
     if (!film) {
-      return null; // Or throw NotFoundException, depending on requirement
+      return null;
     }
     return film.schedule.map((schedule) => this.mapScheduleToDto(schedule));
   }
-
-  private mapFilmDocumentToDto(filmDocument: any): FilmDto {
+  private mapFilmDocumentToDto(filmDocument: any): MovieDto {
     return {
       id: filmDocument.id,
       rating: filmDocument.rating,
@@ -45,7 +41,7 @@ export class FilmsService {
     };
   }
 
-  private mapScheduleToDto(schedule: any): ScheduleDto {
+  private mapScheduleToDto(schedule: any): SessionDto {
     return {
       id: schedule.id,
       daytime: schedule.daytime,
