@@ -1,8 +1,8 @@
-import {ReactNode, Reducer, useEffect, useReducer, useRef} from "react";
-import {Actions, appReducer, AppState, initialState, Modals} from "../utils/state.ts";
-import {Contacts, FilmAPI, IFilmAPI, Movie, Session} from "../utils/api.ts";
-import {API_URL, CDN_URL} from "../utils/constants.ts";
-import {Button} from "../components/Button/Button.tsx";
+import { ReactNode, Reducer, useEffect, useReducer, useRef } from 'react';
+import { Actions, appReducer, AppState, initialState, Modals } from '../utils/state';
+import { Contacts, FilmAPI, IFilmAPI, Movie, Session } from '../utils/api';
+import { API_URL, CDN_URL } from '../utils/constants';
+import { Button } from '../components';
 
 const flow : Record<Modals, { next: Modals | null, prev: Modals | null }> = {
     'schedule': { next: 'places', prev: null },
@@ -95,7 +95,9 @@ export function useAppState() {
     };
 
     useEffect(() => {
-        api.current.getFilms().then(setFilms);
+        api.current.getFilms()
+          .then(setFilms)
+          .catch(console.error);
     }, []);
 
     return {

@@ -1,5 +1,5 @@
-@use 'variables' as *;
-@use 'mixins';
+@use '@scss/variables' as *;
+@use '@scss/mixins';
 
 .places {
   @include mixins.flex(column);
