@@ -5,7 +5,15 @@ import {
 } from '@nestjs/common';
 import { FilmsService } from '../films/films.service';
 import { OrderRepository } from './order.repository';
-import { BookSeatsDto, OrderResponseDto } from './order.dto';
+import { BookSeatsDto } from './order.dto';
+
+export interface CreatedTicket {
+  id: string;
+  filmId: string;
+  scheduleId: string;
+  row: number;
+  seat: number;
+}
 
 @Injectable()
 export class OrderService {
@@ -14,45 +22,49 @@ export class OrderService {
     private readonly orderRepository: OrderRepository,
   ) {}
 
-  async bookSeats(bookSeatsDto: BookSeatsDto): Promise<OrderResponseDto> {
+  async bookSeats(bookSeatsDto: BookSeatsDto): Promise<CreatedTicket[]> {
     const { filmId, scheduleId, seats } = bookSeatsDto;
 
-    const filmSchedule = await this.filmsService.getScheduleByFilmId(filmId);
-    if (!filmSchedule) {
-      throw new NotFoundException(`Film with ID "${filmId}" not found`);
-    }
+    const schedule = await this.orderRepository.findSchedule(
+      filmId,
+      scheduleId,
+    );
 
-    const scheduleItem = filmSchedule.find((item) => item.id === scheduleId);
-    if (!scheduleItem) {
+    if (!schedule) {
       throw new NotFoundException(
-        `Schedule with ID "${scheduleId}" not found for film "${filmId}"`,
+        `Сеанс с ID "${scheduleId}" не найден для фильма "${filmId}"`,
       );
     }
 
-    const bookedSeats: string[] = [];
-    const takenSeatsInSchedule = scheduleItem.taken || [];
+    const seatsToBook: string[] = [];
+    const takenSeatsInSchedule = schedule.taken || [];
 
+    // Проверяем, не заняты ли какие-либо из запрошенных мест.
     for (const seatToBook of seats) {
       const seatKey = `${seatToBook.row}:${seatToBook.seat}`;
       if (takenSeatsInSchedule.includes(seatKey)) {
         throw new BadRequestException(
-          `Seat ${seatToBook.row}:${seatToBook.seat} is already taken for this schedule.`,
+          `Место ${seatToBook.row}:${seatToBook.seat} уже занято на этом сеансе.`,
         );
       }
-      bookedSeats.push(seatKey);
+      seatsToBook.push(seatKey);
     }
 
-    await this.orderRepository.updateTakenSeats(
-      filmId,
-      scheduleId,
-      bookedSeats,
-      takenSeatsInSchedule,
-    );
+    // Обновляем информацию о занятых местах в базе данных.
+    await this.orderRepository.updateTakenSeats(scheduleId, [
+      ...takenSeatsInSchedule,
+      ...seatsToBook,
+    ]);
 
-    return {
-      success: true,
-      message: 'Seats booked successfully',
-      bookedSeats: bookedSeats,
-    };
+    // Создаем результат для каждого забронированного билета.
+    const createdTickets: CreatedTicket[] = seats.map((seat) => ({
+      id: `order_${Date.now()}_${seat.row}_${seat.seat}`,
+      filmId: filmId,
+      scheduleId: scheduleId,
+      row: seat.row,
+      seat: seat.seat,
+    }));
+
+    return createdTickets;
   }
 }

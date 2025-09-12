@@ -16,7 +16,7 @@ interface ApiListResponse<T> {
 }
 
 @Controller('/order')
-@UsePipes(new ValidationPipe())
+@UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
@@ -24,41 +24,56 @@ export class OrderController {
   async createOrder(
     @Body() orderDto: OrderDto,
   ): Promise<ApiListResponse<OrderResultDto>> {
+    const tickets = orderDto.tickets;
+    if (!tickets || tickets.length === 0) {
+      throw new BadRequestException('Массив билетов не может быть пустым.');
+    }
+
     try {
+      const firstTicket = tickets[0];
       const bookSeatsDto: BookSeatsDto = {
-        filmId: orderDto.tickets[0].film,
-        scheduleId: orderDto.tickets[0].session,
-        seats: orderDto.tickets.map((ticket) => ({
+        filmId: firstTicket.film,
+        scheduleId: firstTicket.session,
+        seats: tickets.map((ticket) => ({
           row: ticket.row,
           seat: ticket.seat,
         })),
       };
-      await this.orderService.bookSeats(bookSeatsDto);
-      const orderResultItems: OrderResultDto[] = orderDto.tickets.map(
-        (ticket) => ({
+
+      // Вызываем сервис для бронирования мест.
+      const createdTickets = await this.orderService.bookSeats(bookSeatsDto);
+
+      const orderResultItems: OrderResultDto[] = tickets.map((ticket) => {
+        const created = createdTickets.find(
+          (c) => c.row === ticket.row && c.seat === ticket.seat,
+        );
+
+        return {
+          id: created?.id, // Добавляем ID из ответа сервиса
           film: ticket.film,
           session: ticket.session,
-          daytime: ticket.daytime || '',
-          day: ticket.day || '',
-          time: ticket.time || '',
+          daytime: ticket.daytime,
           row: ticket.row,
           seat: ticket.seat,
-          price: ticket.price || 0,
-        }),
-      );
+          price: ticket.price,
+        };
+      });
 
       return {
         total: orderResultItems.length,
         items: orderResultItems,
       };
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      } else if (error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
-      console.error('Error booking seats:', error);
-      throw new BadRequestException('Failed to book seats. Please try again.');
+      console.error('Ошибка при бронировании мест:', error);
+      throw new BadRequestException(
+        'Не удалось забронировать места. Пожалуйста, попробуйте снова.',
+      );
     }
   }
 }
