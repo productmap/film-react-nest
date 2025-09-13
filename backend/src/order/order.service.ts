@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { FilmsService } from '../films/films.service';
 import { OrderRepository } from './order.repository';
-import { BookSeatsDto } from './order.dto';
+import { BookSeatsDto, OrderDto, OrderResultDto } from './order.dto';
 
 export interface CreatedTicket {
   id: string;
@@ -15,12 +15,72 @@ export interface CreatedTicket {
   seat: number;
 }
 
+interface ApiListResponse<T> {
+  total: number;
+  items: T[];
+}
+
 @Injectable()
 export class OrderService {
   constructor(
     private readonly filmsService: FilmsService,
     private readonly orderRepository: OrderRepository,
   ) {}
+
+  async createOrder(
+    orderDto: OrderDto,
+  ): Promise<ApiListResponse<OrderResultDto>> {
+    const { tickets } = orderDto;
+    if (!tickets || tickets.length === 0) {
+      throw new BadRequestException('Массив билетов не может быть пустым.');
+    }
+
+    try {
+      const firstTicket = tickets[0];
+      const bookSeatsDto: BookSeatsDto = {
+        filmId: firstTicket.film,
+        scheduleId: firstTicket.session,
+        seats: tickets.map((ticket) => ({
+          row: ticket.row,
+          seat: ticket.seat,
+        })),
+      };
+
+      const createdTickets = await this.bookSeats(bookSeatsDto);
+
+      const orderResultItems: OrderResultDto[] = tickets.map((ticket) => {
+        const created = createdTickets.find(
+          (c) => c.row === ticket.row && c.seat === ticket.seat,
+        );
+
+        return {
+          id: created?.id,
+          film: ticket.film,
+          session: ticket.session,
+          daytime: ticket.daytime,
+          row: ticket.row,
+          seat: ticket.seat,
+          price: ticket.price,
+        };
+      });
+
+      return {
+        total: orderResultItems.length,
+        items: orderResultItems,
+      };
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      console.error('Ошибка при создании заказа:', error);
+      throw new BadRequestException(
+        'Не удалось создать заказ. Пожалуйста, попробуйте снова.',
+      );
+    }
+  }
 
   async bookSeats(bookSeatsDto: BookSeatsDto): Promise<CreatedTicket[]> {
     const { filmId, scheduleId, seats } = bookSeatsDto;
@@ -57,14 +117,12 @@ export class OrderService {
     ]);
 
     // Создаем результат для каждого забронированного билета.
-    const createdTickets: CreatedTicket[] = seats.map((seat) => ({
+    return seats.map((seat) => ({
       id: `order_${Date.now()}_${seat.row}_${seat.seat}`,
       filmId: filmId,
       scheduleId: scheduleId,
       row: seat.row,
       seat: seat.seat,
     }));
-
-    return createdTickets;
   }
 }

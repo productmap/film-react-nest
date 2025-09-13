@@ -36,10 +36,8 @@ COPY --from=dependencies --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --chown=node:node ./public ./public
 
-# Переключаемся на непривилегированного пользователя
 USER node
 
 EXPOSE 3000
 
-# Команда запуска осталась прежней, так как она относительна WORKDIR
 CMD ["node", "dist/src/main"]
