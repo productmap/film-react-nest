@@ -17,6 +17,8 @@ services:
       - mongo
     ports:
       - "3000:3000"
+    volumes:
+      - logs_data:/app/logs
 
   postgres:
     image: postgres:15-alpine
@@ -54,3 +56,4 @@ services:
 volumes:
   pgdata:
   mongodata:
+  logs_data:
