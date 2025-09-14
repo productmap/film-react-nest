@@ -1,47 +1,51 @@
 import { Module, OnModuleInit } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { MongooseModule } from '@nestjs/mongoose';
 import { FilmsController } from './films.controller';
 import { FilmsService } from './films.service';
-import { FilmsRepository } from './films.repository';
-import { Film, FilmSchema } from './films.schema';
-import * as path from 'path';
-import * as fs from 'fs/promises';
+import {
+  FilmsRepository,
+  TypeOrmFilmsRepository,
+  MongooseFilmsRepository,
+} from './films.repository';
+import { Film as TypeOrmFilm } from './films.entity';
+import { Schedule as TypeOrmSchedule } from '../order/order.entity';
+import { Film as MongooseFilm, FilmSchema } from './films.schema';
+
+// Определяем, какой драйвер базы данных используется, на основе переменной окружения.
+const driver = process.env.DATABASE_DRIVER;
+
+const dbFeatureModule =
+  driver === 'mongodb'
+    ? MongooseModule.forFeature([
+        { name: MongooseFilm.name, schema: FilmSchema },
+      ])
+    : TypeOrmModule.forFeature([TypeOrmFilm, TypeOrmSchedule]);
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: Film.name, schema: FilmSchema }]),
-  ],
+  imports: [ConfigModule, dbFeatureModule],
   controllers: [FilmsController],
-  providers: [FilmsService, FilmsRepository],
+  providers: [
+    FilmsService,
+    {
+      provide: FilmsRepository,
+      useClass:
+        driver === 'mongodb' ? MongooseFilmsRepository : TypeOrmFilmsRepository,
+    },
+  ],
   exports: [FilmsService],
 })
 export class FilmsModule implements OnModuleInit {
-  constructor(private readonly filmsService: FilmsService) {}
+  constructor(
+    private readonly filmsService: FilmsService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async onModuleInit() {
-    await this.seedDatabase();
-  }
-
-  async seedDatabase() {
-    const filmsCount = await this.filmsService.countFilms();
-    if (filmsCount === 0) {
-      const stubFilePath = path.join(
-        __dirname,
-        '..',
-        '..',
-        'test',
-        'mongodb_initial_stub.json',
-      );
-      try {
-        const jsonData = await fs.readFile(stubFilePath, 'utf-8');
-        const filmsData = JSON.parse(jsonData);
-        await this.filmsService.importFilms(filmsData);
-        console.log('Database seeded with initial films data.');
-      } catch (error) {
-        console.error('Error seeding database:', error);
-      }
-    } else {
-      console.log('Database already seeded, skipping seeding.');
+    // Запускаем начальное наполнение базы данных только в режиме разработки.
+    if (this.configService.get('NODE_ENV') !== 'production') {
+      await this.filmsService.seedDatabase();
     }
   }
 }

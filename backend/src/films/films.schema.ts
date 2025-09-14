@@ -3,6 +3,7 @@ import { HydratedDocument } from 'mongoose';
 
 export type FilmDocument = HydratedDocument<Film>;
 
+// Схема для коллекции 'films' в MongoDB.
 @Schema({ timestamps: true, versionKey: false, collection: 'films' })
 export class Film {
   @Prop({ required: true })
@@ -32,6 +33,7 @@ export class Film {
   @Prop({ required: true })
   description: string;
 
+  // Определяем массив вложенных объектов-сеансов.
   @Prop({ type: [{ type: Object, ref: 'Schedule' }], default: [] })
   schedule: Schedule[];
 }
@@ -61,5 +63,3 @@ export class Schedule {
   @Prop({ type: [String], default: [] })
   taken: string[];
 }
-
-export const ScheduleSchema = SchemaFactory.createForClass(Schedule);
