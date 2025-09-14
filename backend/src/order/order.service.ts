@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { FilmsService } from '../films/films.service';
@@ -22,6 +23,8 @@ interface ApiListResponse<T> {
 
 @Injectable()
 export class OrderService {
+  private readonly logger = new Logger(OrderService.name);
+
   constructor(
     private readonly filmsService: FilmsService,
     private readonly orderRepository: OrderRepository,
@@ -75,7 +78,7 @@ export class OrderService {
       ) {
         throw error;
       }
-      console.error('Ошибка при создании заказа:', error);
+      this.logger.error('Ошибка при создании заказа', error.stack);
       throw new BadRequestException(
         'Не удалось создать заказ. Пожалуйста, попробуйте снова.',
       );

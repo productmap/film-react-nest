@@ -1,4 +1,4 @@
-import { Module, DynamicModule, Logger, Global } from '@nestjs/common';
+import { Module, DynamicModule, Logger, Global, OnModuleInit } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -7,11 +7,16 @@ import { Schedule } from '../order/order.entity';
 
 @Global()
 @Module({})
-export class DatabaseModule {
+export class DatabaseModule implements OnModuleInit {
+  private readonly logger = new Logger(DatabaseModule.name);
+
+  onModuleInit() {
+    const driver = process.env.DATABASE_DRIVER;
+    this.logger.log(`Initializing database connection for driver: ${driver}`);
+  }
+
   static forRoot(): DynamicModule {
     const driver = process.env.DATABASE_DRIVER;
-    const logger = new Logger('DatabaseModule');
-    logger.log(`Initializing database connection for driver: ${driver}`);
 
     if (driver === 'mongodb') {
       return {
@@ -27,7 +32,6 @@ export class DatabaseModule {
                   'DATABASE_URL is not defined for mongodb driver',
                 );
               }
-              logger.log(`Connecting to MongoDB...`);
               return { uri };
             },
           }),
@@ -44,7 +48,6 @@ export class DatabaseModule {
             imports: [ConfigModule],
             inject: [ConfigService],
             useFactory: (configService: ConfigService) => {
-              logger.log(`Connecting to PostgreSQL...`);
               return {
                 type: 'postgres',
                 host: configService.get<string>('POSTGRES_HOST'),

@@ -1,12 +1,15 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
+import { WinstonModule } from 'nest-winston';
 import { AppModule } from './app.module';
+import { winstonConfig } from './lib/logging/winston.config';
 import { Logger } from '@nestjs/common';
 
-const logger = new Logger('App');
-
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: WinstonModule.createLogger(winstonConfig),
+  });
+  const logger = new Logger('App');
   app.setGlobalPrefix('api/afisha');
   app.enableCors();
 
