@@ -14,4 +14,5 @@
 
 ## Документация
 
+* [Локальный запуск в Docker](doc/local_docker_deployment.md)
 * [Разворачивание приложения в Яндекс Облаке](doc/yandex_cloud_deployment.md)
