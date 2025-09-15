@@ -10,7 +10,7 @@ async function bootstrap() {
     logger: WinstonModule.createLogger(winstonConfig),
   });
   const logger = new Logger('App');
-  app.setGlobalPrefix('api/afisha');
+  app.setGlobalPrefix('api/afisha', { exclude: ['/'] });
   app.enableCors();
 
   const hostname = process.env.HOST || '0.0.0.0';

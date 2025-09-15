@@ -1,10 +1,13 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { DatabaseModule } from './database';
 import { FilmsModule } from './films/films.module';
 import { OrderModule } from './order/order.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { LoggingMiddleware } from './lib/logging/logging.middleware';
 
 @Module({
   imports: [
@@ -23,7 +26,11 @@ import { OrderModule } from './order/order.module';
       rootPath: join(process.cwd(), 'public'),
     }),
   ],
-  controllers: [],
-  providers: [],
+  controllers: [AppController],
+  providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggingMiddleware).forRoutes('*');
+  }
+}
