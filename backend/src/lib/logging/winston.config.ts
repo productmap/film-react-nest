@@ -1,7 +1,9 @@
 import * as winston from 'winston';
-import { consoleTransport } from './transports/console.transport';
-import { fileJsonTransport } from './transports/file-json.transport';
-import { fileTskvTransport } from './transports/file-tskv.transport';
+import {
+  consoleTransport,
+  fileJsonTransport,
+  fileTskvTransport,
+} from './transports';
 
 export const winstonConfig: winston.LoggerOptions = {
   levels: winston.config.npm.levels,

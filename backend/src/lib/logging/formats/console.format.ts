@@ -1,5 +1,8 @@
 import * as winston from 'winston';
 
+/**
+ * Формат для вывода логов в консоль в режиме разработки
+ */
 export const consoleFormat = winston.format.combine(
   winston.format.timestamp({ format: 'HH:mm:ss' }),
   winston.format.ms(),
