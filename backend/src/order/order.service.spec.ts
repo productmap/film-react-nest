@@ -88,8 +88,14 @@ describe('OrderService', () => {
       expect(result.items.length).toBe(1);
       expect(result.items[0].id).toBeDefined(); // ID генерируется динамически
       expect(result.items[0].film).toBe('film1');
-      expect(mockOrderRepository.findSchedule).toHaveBeenCalledWith('film1', 'schedule1');
-      expect(mockOrderRepository.updateTakenSeats).toHaveBeenCalledWith('schedule1', ['1:1']);
+      expect(mockOrderRepository.findSchedule).toHaveBeenCalledWith(
+        'film1',
+        'schedule1',
+      );
+      expect(mockOrderRepository.updateTakenSeats).toHaveBeenCalledWith(
+        'schedule1',
+        ['1:1'],
+      );
     });
 
     it('должен выбрасывать BadRequestException, если массив билетов пуст', async () => {
@@ -114,7 +120,9 @@ describe('OrderService', () => {
       mockOrderRepository.findSchedule.mockResolvedValue(null);
 
       await expect(service.createOrder(orderDto)).rejects.toThrow(
-        new NotFoundException(`Сеанс с ID "non-existent" не найден для фильма "film1"`),
+        new NotFoundException(
+          `Сеанс с ID "non-existent" не найден для фильма "film1"`,
+        ),
       );
     });
   });
