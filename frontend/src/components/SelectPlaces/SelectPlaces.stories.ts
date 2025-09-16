@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import { SelectPlaces } from './SelectPlaces';
 
-const meta = {
+const meta: Meta<typeof SelectPlaces> = {
   title: 'UI/SelectPlaces',
   component: SelectPlaces,
   parameters: {
@@ -11,7 +11,7 @@ const meta = {
   args: {
     onSelect: fn(),
   },
-} satisfies Meta<typeof SelectPlaces>;
+};
 
 export default meta;
 type Story = StoryObj<typeof meta>;

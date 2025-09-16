@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import { Header } from './Header';
 
-const meta = {
+const meta: Meta<typeof Header> = {
   title: 'UI/Header',
   component: Header,
   parameters: {
@@ -11,7 +11,7 @@ const meta = {
   args: {
     onClick: fn()
   },
-} satisfies Meta<typeof Header>;
+};
 
 export default meta;
 type Story = StoryObj<typeof meta>;
