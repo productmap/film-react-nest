@@ -19,4 +19,11 @@ async function bootstrap() {
   logger.log(`Application is running on: http://${hostname}:${port}`);
 }
 
-bootstrap();
+(async () => {
+  try {
+    await bootstrap();
+  } catch (error) {
+    console.error('Фатальная ошибка при запуске сервера', error);
+    process.exit(1);
+  }
+})();
