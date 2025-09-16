@@ -1,4 +1,10 @@
-import { Module, DynamicModule, Logger, Global, OnModuleInit } from '@nestjs/common';
+import {
+  Module,
+  DynamicModule,
+  Logger,
+  Global,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MongooseModule } from '@nestjs/mongoose';
