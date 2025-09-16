@@ -21,7 +21,7 @@ describe('tskvFormat', () => {
 
     // 3. Проверка результата
     const expected =
-      'tskv\ttimestamp=2024-01-01T12:00:00.000Z\tlevel=info\tmessage=Это тестовое сообщение';
+      'timestamp=2024-01-01T12:00:00.000Z\tlevel=info\tmessage=Это тестовое сообщение';
     expect(result[MESSAGE]).toBe(expected);
   });
 
@@ -42,7 +42,7 @@ describe('tskvFormat', () => {
 
     // 3. Проверка результата
     const expected =
-      'tskv\ttimestamp=2024-01-01T12:30:00.000Z\tlevel=warn\tmessage=Еще один тест\tcontext=MyTestContext\ttraceId=123-abc';
+      'timestamp=2024-01-01T12:30:00.000Z\tlevel=warn\tmessage=Еще один тест\tcontext=MyTestContext\ttraceId=123-abc';
     expect(result[MESSAGE]).toBe(expected);
   });
 
@@ -59,10 +59,10 @@ describe('tskvFormat', () => {
 
     // 2. Вызов тестируемого метода
     const result = tskvFormat.transform(info);
-    
+
     // 3. Проверка результата
     const expected =
-      'tskv\ttimestamp=2024-01-01T13:00:00.000Z\tlevel=error\tmessage=Произошла ошибка\tdetails={"code":500,"reason":"Внутренняя ошибка сервера"}';
+      'timestamp=2024-01-01T13:00:00.000Z\tlevel=error\tmessage=Произошла ошибка\tdetails={"code":500,"reason":"Внутренняя ошибка сервера"}';
     expect(result[MESSAGE]).toBe(expected);
   });
 });

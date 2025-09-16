@@ -4,7 +4,7 @@ import * as winston from 'winston';
 export const tskvFormat = winston.format.printf(
   ({ timestamp, level, message, ...meta }) => {
     // Базовые поля
-    let log = `tskv\ttimestamp=${timestamp}\tlevel=${level}\tmessage=${message}`;
+    let log = `timestamp=${timestamp}\tlevel=${level}\tmessage=${message}`;
 
     // Добавляем метаданные
     for (const key in meta) {

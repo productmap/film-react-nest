@@ -45,8 +45,6 @@ describe('fileTskvTransport', () => {
           const data = fs.readFileSync(logFilePath, 'utf8');
 
           expect(data).not.toBe('');
-
-          expect(data).toContain('tskv\t');
           expect(data).toContain(`message=${testMessage}`);
           expect(data).toContain(`level=info`);
           expect(data).toContain(`userId=${meta.userId}`);
