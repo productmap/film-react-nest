@@ -5,12 +5,12 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import appConfig from './app.config';
 import helmet from 'helmet';
-import { winstonConfig } from './lib/logging';
+import { loggingConfig } from './lib/logging';
 import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    logger: WinstonModule.createLogger(winstonConfig),
+    logger: WinstonModule.createLogger(loggingConfig),
   });
   const logger = new Logger('App');
   // Защита от поддельных запросов

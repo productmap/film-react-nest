@@ -8,7 +8,7 @@ import { FilmsModule } from './films/films.module';
 import { OrderModule } from './order/order.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { LoggingMiddleware } from './lib/logging/logging.middleware';
+import { LoggingMiddleware } from './lib/logging';
 import { RateLimiterMiddleware } from './lib/middleware/rate-limiter.middleware';
 
 @Module({

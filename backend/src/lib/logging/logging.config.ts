@@ -5,7 +5,7 @@ import {
   fileTskvTransport,
 } from './transports';
 
-export const winstonConfig: winston.LoggerOptions = {
+export const loggingConfig: winston.LoggerOptions = {
   levels: winston.config.npm.levels,
   transports: [
     consoleTransport, // 1. Транспорт для консоли
