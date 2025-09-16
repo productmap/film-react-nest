@@ -24,6 +24,8 @@ cp .env.local .env
 ```shell
 docker-compose up -d
 ```
+> инструкция по установке докер на Mac:
+[Установка Docker Desktop на Mac](https://docs.docker.com/desktop/install/mac-install/)
 
 ### Шаг 5: Проверка
 
