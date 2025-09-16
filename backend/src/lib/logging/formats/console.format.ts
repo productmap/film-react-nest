@@ -15,7 +15,7 @@ export const consoleFormat = winston.format.combine(
     const symbols: Record<string, string> = {
       info: 'ℹ️',
       warn: '⚠️',
-      error: '❌',
+      error: '🔴',
       debug: '⚙️',
     };
 

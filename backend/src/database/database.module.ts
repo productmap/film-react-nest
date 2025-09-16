@@ -58,9 +58,9 @@ export class DatabaseModule implements OnModuleInit {
                 type: 'postgres',
                 host: configService.get<string>('POSTGRES_HOST'),
                 port: configService.get<number>('POSTGRES_PORT'),
-                username: configService.get<string>('POSTGRES_USERNAME'),
-                password: configService.get<string>('POSTGRES_PASSWORD'),
-                database: configService.get<string>('POSTGRES_DATABASE'),
+                username: configService.get<string>('DB_USER'),
+                password: configService.get<string>('DB_PASSWORD'),
+                database: configService.get<string>('DB_NAME'),
                 entities: [Film, Schedule],
                 synchronize: configService.get('NODE_ENV') !== 'production',
               };

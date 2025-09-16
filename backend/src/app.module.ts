@@ -17,7 +17,6 @@ import { RateLimiterMiddleware } from './lib/middleware/rate-limiter.middleware'
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      envFilePath: '.env',
     }),
     // База данных
     DatabaseModule.forRoot(),
