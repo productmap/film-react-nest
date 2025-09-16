@@ -135,8 +135,9 @@ export class OrderDto {
   phone: string;
 
   @ApiProperty({ description: 'Массив билетов в заказе', type: [TicketDto] })
-  @IsNotEmpty()
+  @IsNotEmpty() // Ensures the property is not null or undefined
   @IsArray()
+  @ArrayMinSize(1) // Ensures the array is not empty
   @ValidateNested({ each: true })
   @Type(() => TicketDto)
   tickets: TicketDto[];
