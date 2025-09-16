@@ -2,7 +2,9 @@ import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { WinstonModule } from 'nest-winston';
 import { AppModule } from './app.module';
-import { winstonConfig } from './lib/logging/winston.config';
+import appConfig from './app.config';
+import helmet from 'helmet';
+import { winstonConfig } from './lib/logging';
 import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
@@ -10,13 +12,22 @@ async function bootstrap() {
     logger: WinstonModule.createLogger(winstonConfig),
   });
   const logger = new Logger('App');
-  app.setGlobalPrefix('api/afisha', { exclude: ['/'] });
-  app.enableCors();
-
-  const hostname = process.env.HOST || '0.0.0.0';
-  const port = process.env.PORT || 3000;
-  await app.listen(port, hostname);
-  logger.log(`Application is running on: http://${hostname}:${port}`);
+  // Защита от поддельных запросов
+  app.use(helmet());
+  app.enableCors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+    credentials: true,
+  });
+  // Основный префикс для всех маршрутов
+  app.setGlobalPrefix(appConfig.globalPrefix, { exclude: ['/'] });
+  // Запуск сервера
+  await app.listen(appConfig.port, appConfig.host);
+  logger.log(
+    `Сервер запущен: ${appConfig.protocol}://${appConfig.host}:${appConfig.port}`,
+  );
 }
 
 (async () => {
