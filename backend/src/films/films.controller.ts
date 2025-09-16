@@ -1,4 +1,4 @@
-import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { FilmsService } from './films.service';
 import { MovieDto, SessionDto } from './films.dto';
 import { ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
@@ -8,7 +8,7 @@ interface ApiListResponse<T> {
   items: T[];
 }
 
-@ApiTags('Фильмы') // Группируем эндпоинты под тегом "Фильмы"
+@ApiTags('Фильмы')
 @Controller('/films')
 export class FilmsController {
   constructor(private readonly filmsService: FilmsService) {}
@@ -39,11 +39,6 @@ export class FilmsController {
     @Param('id') filmId: string,
   ): Promise<ApiListResponse<SessionDto>> {
     const items = await this.filmsService.getScheduleByFilmId(filmId);
-    if (!items || items.length === 0) {
-      throw new NotFoundException(
-        `Schedule for film with ID "${filmId}" not found`,
-      );
-    }
     const total = items.length;
     return { total, items };
   }
