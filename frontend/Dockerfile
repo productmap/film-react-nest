@@ -9,8 +9,9 @@ WORKDIR /app
 ARG VITE_API_URL
 ARG VITE_CDN_URL
 
-# Устанавливаем КОНКРЕТНУЮ версию pnpm, чтобы избежать несовместимости lock-файла
-RUN npm i -g pnpm@8.10.2
+# Используем corepack (встроен в Node.js) для активации нужной версии pnpm.
+# Это более современный и надежный способ, чем глобальная установка через npm.
+RUN corepack enable && corepack prepare pnpm@10.16.1 --activate
 
 # Копируем файлы зависимостей и устанавливаем их
 COPY package.json pnpm-lock.yaml ./
