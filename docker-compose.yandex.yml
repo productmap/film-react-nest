@@ -7,7 +7,7 @@ services:
   backend:
     # Замените на ваше имя образа в Yandex Container Registry
     # Пример: image: cr.yandex/crpabcdefg123456789/film-react-nest-backend:latest
-    image: cr.yandex/crpabcdefg123456789/film-react-nest-backend:latest
+    image: cr.yandex/${YC_REGISTRY_ID}/film-react-nest-backend:${IMAGE_TAG:-latest}
     # build: # В проде сборка на хосте не используется, оставляем для локальной отладки
     #   context: ./backend
     container_name: backend
@@ -53,7 +53,7 @@ services:
     # Этот сервис теперь отвечает и за раздачу фронтенда, и за проксирование бэкенда.
     # Замените на ваше имя образа в Yandex Container Registry
     # Пример: image: cr.yandex/crpabcdefg123456789/film-react-nest-nginx:latest
-    image: cr.yandex/crpabcdefg123456789/film-react-nest-nginx:latest
+    image: cr.yandex/${YC_REGISTRY_ID}/film-react-nest-nginx:${IMAGE_TAG:-latest}
     build: # Оставляем для локальной отладки продакшен-сборки
       context: .
       dockerfile: Dockerfile.frontend.prod # Используем специальный Dockerfile для прода
@@ -64,6 +64,10 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    volumes:
+      # Монтируем сертификаты, созданные в Cloudflare
+      - /home/ubuntu/certs/cert.pem:/etc/ssl/certs/cert.pem:ro
+      - /home/ubuntu/certs/key.pem:/etc/ssl/private/key.pem:ro
     # volumes: # Конфигурация уже встроена в образ, volume не нужен
     depends_on:
       - backend

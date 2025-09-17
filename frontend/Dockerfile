@@ -1,6 +1,6 @@
 # ---- Этап 1: Сборка (Builder) ----
 # Используем полный образ Node.js для сборки проекта
-FROM node:22-alpine AS builder
+FROM node:22-slim AS builder
 
 WORKDIR /app
 
@@ -27,7 +27,7 @@ RUN pnpm run build
 
 # ---- Этап 2: Продакшен (Production) ----
 # Используем минималистичный образ Node.js
-FROM node:22-alpine
+FROM node:22-slim
 
 WORKDIR /app
 
