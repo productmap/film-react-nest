@@ -27,7 +27,7 @@ FROM base AS production
 COPY --from=dependencies --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --chown=node:node ./public ./public
-COPY --chown=node:node ./logs ./logs
+RUN mkdir ./logs && chown node:node ./logs
 
 USER node
 
