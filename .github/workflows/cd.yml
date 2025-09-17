@@ -56,7 +56,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          dockerfile: Dockerfile.frontend.prod
+          dockerfile: ./Dockerfile.frontend.prod
           push: true
           tags: cr.yandex/${{ secrets.YC_REGISTRY_ID }}/film-react-nest-nginx:${{ steps.vars.outputs.tag }}
 
