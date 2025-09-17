@@ -1,0 +1,42 @@
+name: film-nest
+
+services:
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    depends_on:
+      - postgres
+      - mongo
+    ports:
+      - "3000:3000"
+
+  postgres:
+    image: postgres:15-alpine
+    restart:
+      always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DATABASE}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  mongo:
+    image: mongo:6.0
+    restart: always
+    volumes:
+      - mongodata:/data/db
+    ports:
+      - "27017:27017"
+
+volumes:
+  pgdata:
+  mongodata:

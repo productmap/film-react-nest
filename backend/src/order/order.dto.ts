@@ -34,6 +34,15 @@ export class BookSeatsDto {
   seats: SeatDto[];
 }
 
+// Этот DTO описывает ответ сервера после успешного бронирования
+export class OrderResponseDto {
+  orderId: string;
+  filmId: string;
+  scheduleId: string;
+  seats: SeatDto[];
+  status: string; // e.g., 'confirmed'
+}
+
 export class OrderDto {
   @IsNotEmpty()
   @IsEmail()
@@ -77,10 +86,4 @@ export class OrderResultDto {
   row: number;
   seat: number;
   price: number;
-}
-
-export class OrderResponseDto {
-  success: boolean;
-  message: string;
-  bookedSeats?: string[];
 }

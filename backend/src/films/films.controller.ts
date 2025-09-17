@@ -18,7 +18,7 @@ export class FilmsController {
     return { total, items };
   }
 
-  @Get(':id/schedule')
+  @Get(':id/schedule') // Возвращено правильное написание
   async getScheduleByFilmId(
     @Param('id') filmId: string,
   ): Promise<ApiListResponse<SessionDto>> {

@@ -8,7 +8,10 @@ export class MovieDto {
   title: string;
   about: string;
   description: string;
-  schedule: SessionDto[];
+  // releaseYear: number; // Поле удалено
+  duration: number;
+  genre: string;
+  schedule?: SessionDto[];
 }
 
 export class SessionDto {
