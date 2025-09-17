@@ -65,7 +65,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      # Монтируем сертификаты, созданные в Cloudflare
+      # Монтируем сертификаты, созданные в Cloudflare, напрямую в контейнер
       - /home/ubuntu/certs/cert.pem:/etc/ssl/certs/cert.pem:ro
       - /home/ubuntu/certs/key.pem:/etc/ssl/private/key.pem:ro
     # volumes: # Конфигурация уже встроена в образ, volume не нужен
