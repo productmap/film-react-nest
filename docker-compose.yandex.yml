@@ -1,0 +1,75 @@
+name: film-nest-prod
+
+services:
+  # Сервис frontend (dev-сервер) в продакшене не нужен.
+  # Его роль выполняет nginx, который раздает собранную статику.
+
+  backend:
+    # Замените на ваше имя образа в Yandex Container Registry
+    # Пример: image: cr.yandex/crpabcdefg123456789/film-react-nest-backend:latest
+    image: cr.yandex/crpabcdefg123456789/film-react-nest-backend:latest
+    # build: # В проде сборка на хосте не используется, оставляем для локальной отладки
+    #   context: ./backend
+    container_name: backend
+    restart: always
+    env_file:
+      - ./.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    volumes:
+      - logs_data:/app/logs
+
+  postgres:
+    container_name: postgres
+    image: postgres:16.4
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    volumes:
+      - ./postgres:/docker-entrypoint-initdb.d
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    container_name: mongo
+    image: mongo:6.0
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    # Этот сервис теперь отвечает и за раздачу фронтенда, и за проксирование бэкенда.
+    # Замените на ваше имя образа в Yandex Container Registry
+    # Пример: image: cr.yandex/crpabcdefg123456789/film-react-nest-nginx:latest
+    image: cr.yandex/crpabcdefg123456789/film-react-nest-nginx:latest
+    build: # Оставляем для локальной отладки продакшен-сборки
+      context: .
+      dockerfile: Dockerfile.frontend.prod # Используем специальный Dockerfile для прода
+      args:
+        - VITE_API_URL=/api
+        - VITE_CDN_URL=/content/afisha
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    # volumes: # Конфигурация уже встроена в образ, volume не нужен
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  mongo_data:
+  logs_data:
