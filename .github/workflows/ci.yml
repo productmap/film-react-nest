@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, review-2 ]
+  pull_request:
+    branches: [ main, review-2 ]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Use Node.js and setup pnpm
+      uses: actions/setup-node@v3
+      with:
+        node-version: '22' # Используем ту же версию, что и в Dockerfile
+        cache: 'pnpm'
+
+    - name: Install pnpm
+      run: corepack enable
+
+    - name: Install frontend dependencies
+      run: pnpm install --frozen-lockfile --dir ./frontend
+
+    - name: Run frontend tests
+      run: pnpm test --dir ./frontend
+
+    - name: Build frontend
+      run: pnpm build --dir ./frontend
+
+    - name: Install backend dependencies
+      run: pnpm install --frozen-lockfile --dir ./backend
+
+    - name: Run backend tests
+      run: pnpm test --dir ./backend
+
+    - name: Build backend
+      run: pnpm build --dir ./backend
