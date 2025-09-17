@@ -7,15 +7,26 @@ on:
       - completed
 
 jobs:
+  debug:
+    # Временная задача для отладки. Она покажет нам, какие данные приходят от CI.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump workflow_run context
+        env:
+          WORKFLOW_RUN_CONTEXT: ${{ toJSON(github.event.workflow_run) }}
+        run: echo "$WORKFLOW_RUN_CONTEXT"
+
   deploy:
     runs-on: ubuntu-latest
-    # Запускаем деплой для веток main и review-2, если CI прошел успешно
+    needs: debug # Запускаем после отладки
     if: >
       (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'review-2') &&
       github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Set Docker tag
         id: vars
@@ -67,13 +78,10 @@ jobs:
             # ID реестра, чтобы docker-compose мог составить полный путь к образу
             export YC_REGISTRY_ID=${{ secrets.YC_REGISTRY_ID }}
             
-            # Получаем временный IAM-токен для привязанного к ВМ сервисного аккаунта
-            # и логинимся в Yandex Container Registry.
-            # Эта команда выполняется при каждом деплое для безопасности.
-            /home/ubuntu/yandex-cloud/bin/yc container registry get-login | docker login --username iam --password-stdin cr.yandex
-            
-            # Аутентификация Docker уже настроена на сервере с помощью 'yc configure-docker',
-            # поэтому дополнительный вход не требуется.
+            # Получаем временный IAM-токен для привязанного к ВМ сервисного аккаунта и логинимся в Docker.
+            # Это самый надежный способ аутентификации на сервере, который мы проверили вручную.
+            YC_IAM_TOKEN=$(/home/ubuntu/yandex-cloud/bin/yc iam create-token)
+            echo $YC_IAM_TOKEN | docker login --username iam --password-stdin cr.yandex
             # Загружаем актуальные образы
             docker-compose -f docker-compose.yandex.yml --env-file ./.env pull
             # Перезапускаем сервисы с новыми образами
