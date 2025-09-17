@@ -48,6 +48,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./backend
+          dockerfile: ./backend/Dockerfile
           push: true
           tags: cr.yandex/${{ secrets.YC_REGISTRY_ID }}/film-react-nest-backend:${{ steps.vars.outputs.tag }}
 
