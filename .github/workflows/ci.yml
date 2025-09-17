@@ -21,7 +21,7 @@ jobs:
     - name: Use Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '22'
+        node-version: '2йЖй'
         cache: 'pnpm'
         cache-dependency-path: frontend/pnpm-lock.yaml # Указываем путь к lock-файлу фронтенда
 
