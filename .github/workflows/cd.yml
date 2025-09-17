@@ -2,7 +2,7 @@ name: CD
 
 on:
   workflow_run:
-    workflows: ["CI"]
+    workflows: [ "CI" ]
     types:
       - completed
 
@@ -66,7 +66,12 @@ jobs:
             export IMAGE_TAG=${{ steps.vars.outputs.tag }}
             # ID реестра, чтобы docker-compose мог составить полный путь к образу
             export YC_REGISTRY_ID=${{ secrets.YC_REGISTRY_ID }}
-
+            
+            # Получаем временный IAM-токен для привязанного к ВМ сервисного аккаунта
+            # и логинимся в Yandex Container Registry.
+            # Эта команда выполняется при каждом деплое для безопасности.
+            /home/ubuntu/yandex-cloud/bin/yc container registry get-login | docker login --username iam --password-stdin cr.yandex
+            
             # Аутентификация Docker уже настроена на сервере с помощью 'yc configure-docker',
             # поэтому дополнительный вход не требуется.
             # Загружаем актуальные образы
