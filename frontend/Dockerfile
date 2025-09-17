@@ -9,13 +9,13 @@ WORKDIR /app
 ARG VITE_API_URL
 ARG VITE_CDN_URL
 
-# Используем corepack (встроен в Node.js) для активации нужной версии pnpm.
-# Это более современный и надежный способ, чем глобальная установка через npm.
-RUN corepack enable && corepack prepare pnpm@10.16.1 --activate
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 
 # Копируем файлы зависимостей и устанавливаем их
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Копируем остальные исходные файлы
 COPY . .
