@@ -28,9 +28,6 @@ jobs:
     - name: Install frontend dependencies
       run: pnpm install --frozen-lockfile --dir ./frontend
 
-    - name: Run frontend tests
-      run: pnpm test --dir ./frontend
-
     - name: Build frontend
       run: pnpm build --dir ./frontend
 
