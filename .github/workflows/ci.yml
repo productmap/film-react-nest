@@ -7,9 +7,8 @@ on:
     branches: [ main, review-2 ]
 
 jobs:
-  build_and_test:
+  test_frontend:
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -17,13 +16,14 @@ jobs:
     - name: Setup pnpm
       uses: pnpm/action-setup@v4
       with:
-        version: 9 # Укажем последнюю мажорную версию pnpm
+        version: 9
 
     - name: Use Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '22' # Используем ту же версию, что и в Dockerfile
+        node-version: '22'
         cache: 'pnpm'
+        cache-dependency-path: frontend/pnpm-lock.yaml # Указываем путь к lock-файлу фронтенда
 
     - name: Install frontend dependencies
       run: pnpm install --frozen-lockfile --dir ./frontend
@@ -33,6 +33,24 @@ jobs:
 
     - name: Build frontend
       run: pnpm build --dir ./frontend
+
+  test_backend:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
+
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '22'
+        cache: 'pnpm'
+        cache-dependency-path: backend/pnpm-lock.yaml # Указываем путь к lock-файлу бэкенда
 
     - name: Install backend dependencies
       run: pnpm install --frozen-lockfile --dir ./backend
