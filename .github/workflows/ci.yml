@@ -14,14 +14,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Use Node.js and setup pnpm
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9 # Укажем последнюю мажорную версию pnpm
+
+    - name: Use Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '22' # Используем ту же версию, что и в Dockerfile
         cache: 'pnpm'
-
-    - name: Install pnpm
-      run: corepack enable
 
     - name: Install frontend dependencies
       run: pnpm install --frozen-lockfile --dir ./frontend
