@@ -55,8 +55,12 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            # Выход при любой ошибке
+            set -e
             # Переходим в директорию проекта
-            cd ~/film-react-nest            
+            cd ~/film-react-nest
+            # Загружаем последние изменения из репозитория (например, обновления docker-compose.yml)
+            git pull origin ${{ github.event.workflow_run.head_branch }}
             # Экспортируем переменные для docker-compose
             # Тэг образа, соответствующий ветке
             export IMAGE_TAG=${{ steps.vars.outputs.tag }}
