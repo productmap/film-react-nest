@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { fn } from '@storybook/test';
 import { SelectSession } from './SelectSession';
 
-const meta = {
+const meta: Meta<typeof SelectSession> = {
   title: 'UI/SelectSession',
   component: SelectSession,
   parameters: {
@@ -11,13 +11,15 @@ const meta = {
   args: {
     onSelect: fn(),
   },
-} satisfies Meta<typeof SelectSession>;
+};
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
+    // Добавлено недостающее свойство 'selected' для соответствия типу компонента
+    selected: null,
     sessions: [
         {
             id: '1',

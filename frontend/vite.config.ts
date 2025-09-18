@@ -16,8 +16,7 @@ export default defineConfig({
     preprocessorOptions: {
       scss: {
         additionalData: `@use "@scss/variables" as *;`,
-        quietDeps: true,
-        includePaths: ['src/scss']
+        quietDeps: true
       }
     }
   },

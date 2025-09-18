@@ -2,7 +2,8 @@ import { Entity, PrimaryColumn, Column, OneToMany } from 'typeorm';
 import { Schedule } from '../order/order.entity';
 
 // Сущность, описывающая фильм.
-@Entity()
+// Явно указываем имя таблицы 'films' (во множественном числе), чтобы соответствовать схеме в prac.init.sql
+@Entity({ name: 'films' })
 export class Film {
   @PrimaryColumn('uuid')
   id: string;

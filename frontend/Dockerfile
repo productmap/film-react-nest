@@ -1,13 +1,45 @@
-FROM node:22
+# ---- Этап 1: Сборка (Builder) ----
+# Используем полный образ Node.js для сборки проекта
+FROM node:22-slim AS builder
 
 WORKDIR /app
 
-COPY package*.json ./
+# Объявляем аргументы сборки, которые будут переданы из docker-compose.yml
+# Vite автоматически подхватит их как переменные окружения
+ARG VITE_API_URL
+ARG VITE_CDN_URL
 
-RUN npm install
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 
+# Копируем файлы зависимостей и устанавливаем их
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install
+
+# Копируем остальные исходные файлы
 COPY . .
 
-EXPOSE 3000
+# Собираем проект для продакшена
+# Vite использует объявленные выше ARG как переменные окружения
+RUN pnpm run build
 
-CMD ["npm", "run", "dev"]
+
+# ---- Этап 2: Продакшен (Production) ----
+# Используем минималистичный образ Node.js
+FROM node:22-slim
+
+WORKDIR /app
+
+# Устанавливаем только один пакет - легковесный сервер для статики
+RUN npm i -g serve
+
+# Копируем ТОЛЬКО результат сборки из предыдущего этапа
+COPY --from=builder /app/dist ./
+
+# Указываем порт, который будет слушать сервер
+EXPOSE 3001
+
+# Запускаем сервер для раздачи собранных файлов
+# Ключ -s важен для одностраничных приложений (SPA), он перенаправляет все 404 на index.html
+CMD ["serve", "-s", ".", "-l", "3001"]

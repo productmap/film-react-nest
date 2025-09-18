@@ -3,7 +3,7 @@ import { fn } from '@storybook/test';
 import { FilmsGallery } from './FilmsGallery';
 import {CDN_URL} from "../../utils/constants.ts";
 
-const meta = {
+const meta: Meta<typeof FilmsGallery> = {
   title: 'UI/FilmsGallery',
   component: FilmsGallery,
   parameters: {
@@ -12,7 +12,7 @@ const meta = {
   args: {
     onClick: fn()
   },
-} satisfies Meta<typeof FilmsGallery>;
+};
 
 export default meta;
 type Story = StoryObj<typeof meta>;
