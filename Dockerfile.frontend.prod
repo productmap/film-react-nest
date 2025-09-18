@@ -12,13 +12,13 @@ RUN corepack enable
 
 # Копируем файлы для установки зависимостей фронтенда.
 # Контекст сборки будет корневая папка проекта.
-COPY frontend/package.json frontend/pnpm-lock.yaml ./
+COPY frontend/package.json frontend/pnpm-lock.yaml ./frontend/
 
 # Устанавливаем зависимости. --frozen-lockfile гарантирует идентичную установку в CI/CD.
-RUN pnpm install --frozen-lockfile
+RUN pnpm --dir ./frontend install --frozen-lockfile
 
 # Копируем исходный код фронтенда
-COPY frontend/ ./
+COPY frontend/ ./frontend/
 
 # Переменные окружения для сборки будут переданы через build args
 ARG VITE_API_URL=/api
@@ -27,7 +27,7 @@ ENV VITE_API_URL=${VITE_API_URL}
 ENV VITE_CDN_URL=${VITE_CDN_URL}
 
 # Собираем статические файлы
-RUN pnpm run build
+RUN pnpm --dir ./frontend run build
 
 # ---- Этап 2: Продакшен Nginx ----
 FROM nginx:latest
@@ -36,7 +36,7 @@ FROM nginx:latest
 COPY nginx/nginx.prod.conf /etc/nginx/conf.d/default.conf
 
 # Копируем собранные статические файлы фронтенда из этапа сборки
-COPY --from=frontend-builder /app/dist /usr/share/nginx/html
+COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
 
 # Копируем статичные изображения (афиша), которые раньше раздавались бэкендом.
 # В проде Nginx справится с этим гораздо эффективнее.
