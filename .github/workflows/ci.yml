@@ -23,17 +23,13 @@ jobs:
       with:
         node-version: '22'
         cache: 'pnpm'
-        cache-dependency-path: frontend/pnpm-lock.yaml
+#        cache-dependency-path: frontend/pnpm-lock.yaml
 
     - name: Install frontend dependencies
       run: pnpm --dir ./frontend install
 
     - name: Run linter
       run: pnpm --dir ./frontend lint
-
-# раскоментить когда будут тесты
-#    - name: Run frontend tests
-#      run: pnpm --dir ./frontend test
 
     - name: Build frontend
       run: pnpm --dir ./frontend build
