@@ -26,7 +26,7 @@ jobs:
         cache-dependency-path: frontend/pnpm-lock.yaml # Указываем путь к lock-файлу фронтенда
 
     - name: Install frontend dependencies
-      run: pnpm --dir ./frontend install --frozen-lockfile
+      run: pnpm --dir ./frontend install
 
     - name: Build frontend
       run: pnpm --dir ./frontend build
@@ -50,7 +50,7 @@ jobs:
         cache-dependency-path: backend/pnpm-lock.yaml # Указываем путь к lock-файлу бэкенда
 
     - name: Install backend dependencies
-      run: pnpm --dir ./backend install --frozen-lockfile
+      run: pnpm --dir ./backend install
 
     - name: Run backend tests
       run: pnpm --dir ./backend test
