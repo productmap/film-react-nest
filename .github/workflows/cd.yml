@@ -48,15 +48,19 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./backend
-          file: ./backend/Dockerfile # Правильный параметр - 'file'
+          file: ./backend/Dockerfile
           push: true
           tags: cr.yandex/${{ secrets.YC_REGISTRY_ID }}/film-react-nest-backend:${{ steps.vars.outputs.tag }}
+
+      - name: List files in root
+        # Отладочный шаг, чтобы убедиться, что Dockerfile.frontend.prod на месте
+        run: ls -la
 
       - name: Build and push nginx image
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./Dockerfile.frontend.prod # Правильный параметр - 'file'
+          file: ./Dockerfile.frontend.prod
           push: true
           tags: cr.yandex/${{ secrets.YC_REGISTRY_ID }}/film-react-nest-nginx:${{ steps.vars.outputs.tag }}
 
