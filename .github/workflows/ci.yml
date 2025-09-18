@@ -16,17 +16,23 @@ jobs:
     - name: Setup pnpm
       uses: pnpm/action-setup@v4
       with:
-        version: 9
+        version: 10
 
     - name: Use Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '22'
         cache: 'pnpm'
-        cache-dependency-path: frontend/pnpm-lock.yaml # Указываем путь к lock-файлу фронтенда
+        cache-dependency-path: frontend/pnpm-lock.yaml
 
     - name: Install frontend dependencies
       run: pnpm --dir ./frontend install
+
+    - name: Run linter
+      run: pnpm --dir ./frontend lint
+
+#    - name: Run frontend tests
+#      run: pnpm --dir ./frontend test
 
     - name: Build frontend
       run: pnpm --dir ./frontend build
@@ -40,7 +46,7 @@ jobs:
     - name: Setup pnpm
       uses: pnpm/action-setup@v4
       with:
-        version: 9
+        version: 10
 
     - name: Use Node.js
       uses: actions/setup-node@v3
@@ -51,6 +57,9 @@ jobs:
 
     - name: Install backend dependencies
       run: pnpm --dir ./backend install
+
+    - name: Run linter
+      run: pnpm --dir ./backend lint
 
     - name: Run backend tests
       run: pnpm --dir ./backend test

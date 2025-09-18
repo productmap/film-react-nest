@@ -4,7 +4,7 @@ services:
   backend:
     image: cr.yandex/${YC_REGISTRY_ID}/film-react-nest-backend:${IMAGE_TAG:-latest}
     container_name: backend
-    restart: always
+    restart: unless-stopped
     env_file:
       - ./.env
     depends_on:

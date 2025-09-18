@@ -7,18 +7,8 @@ on:
       - completed
 
 jobs:
-  debug:
-    # Временная задача для отладки. Она покажет нам, какие данные приходят от CI.
-    runs-on: ubuntu-latest
-    steps:
-      - name: Dump workflow_run context
-        env:
-          WORKFLOW_RUN_CONTEXT: ${{ toJSON(github.event.workflow_run) }}
-        run: echo "$WORKFLOW_RUN_CONTEXT"
-
   deploy:
     runs-on: ubuntu-latest
-    needs: debug # Запускаем после отладки
     if: >
       (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'review-2') &&
       github.event.workflow_run.conclusion == 'success'
