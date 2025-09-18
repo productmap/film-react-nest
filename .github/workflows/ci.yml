@@ -31,6 +31,7 @@ jobs:
     - name: Run linter
       run: pnpm --dir ./frontend lint
 
+# раскоментить когда будут тесты
 #    - name: Run frontend tests
 #      run: pnpm --dir ./frontend test
 
@@ -53,7 +54,7 @@ jobs:
       with:
         node-version: '22'
         cache: 'pnpm'
-        cache-dependency-path: backend/pnpm-lock.yaml # Указываем путь к lock-файлу бэкенда
+        cache-dependency-path: backend/pnpm-lock.yaml
 
     - name: Install backend dependencies
       run: pnpm --dir ./backend install
