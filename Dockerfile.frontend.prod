@@ -15,8 +15,7 @@ WORKDIR /app/frontend
 # Контекст сборки будет корневая папка проекта.
 COPY frontend/package.json frontend/pnpm-lock.yaml ./
 
-# Устанавливаем зависимости. --frozen-lockfile гарантирует идентичную установку в CI/CD.
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Копируем исходный код фронтенда
 COPY frontend/ .

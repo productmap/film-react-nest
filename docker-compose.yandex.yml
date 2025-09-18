@@ -1,15 +1,8 @@
 name: film-nest-prod
 
 services:
-  # Сервис frontend (dev-сервер) в продакшене не нужен.
-  # Его роль выполняет nginx, который раздает собранную статику.
-
   backend:
-    # Замените на ваше имя образа в Yandex Container Registry
-    # Пример: image: cr.yandex/crpabcdefg123456789/film-react-nest-backend:latest
     image: cr.yandex/${YC_REGISTRY_ID}/film-react-nest-backend:${IMAGE_TAG:-latest}
-    # build: # В проде сборка на хосте не используется, оставляем для локальной отладки
-    #   context: ./backend
     container_name: backend
     restart: always
     env_file:
@@ -50,16 +43,7 @@ services:
       retries: 5
 
   nginx:
-    # Этот сервис теперь отвечает и за раздачу фронтенда, и за проксирование бэкенда.
-    # Замените на ваше имя образа в Yandex Container Registry
-    # Пример: image: cr.yandex/crpabcdefg123456789/film-react-nest-nginx:latest
     image: cr.yandex/${YC_REGISTRY_ID}/film-react-nest-nginx:${IMAGE_TAG:-latest}
-    build: # Оставляем для локальной отладки продакшен-сборки
-      context: .
-      dockerfile: Dockerfile.frontend.prod # Используем специальный Dockerfile для прода
-      args:
-        - VITE_API_URL=/api
-        - VITE_CDN_URL=/content/afisha
     container_name: nginx
     ports:
       - "80:80"
@@ -68,7 +52,6 @@ services:
       # Монтируем сертификаты, созданные в Cloudflare, напрямую в контейнер
       - /home/ubuntu/certs/cert.pem:/etc/ssl/certs/cert.pem:ro
       - /home/ubuntu/certs/key.pem:/etc/ssl/private/key.pem:ro
-    # volumes: # Конфигурация уже встроена в образ, volume не нужен
     depends_on:
       - backend
     restart: unless-stopped
