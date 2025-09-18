@@ -40,7 +40,8 @@ COPY --from=frontend-builder /app/dist /usr/share/nginx/html
 
 # Копируем статичные изображения (афиша), которые раньше раздавались бэкендом.
 # В проде Nginx справится с этим гораздо эффективнее.
-COPY backend/public/afisha /usr/share/nginx/html/content/afisha
+COPY backend/public/content/afisha /usr/share/nginx/html/content/afisha
+
 
 EXPOSE 80
 EXPOSE 443
