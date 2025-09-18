@@ -23,6 +23,7 @@ jobs:
       with:
         node-version: '22'
         cache: 'pnpm'
+        cache-dependency-path: ./frontend/pnpm-lock.yaml
 
     - name: Install frontend dependencies
       run: pnpm --dir ./frontend install
@@ -49,7 +50,7 @@ jobs:
       with:
         node-version: '22'
         cache: 'pnpm'
-#        cache-dependency-path: backend/pnpm-lock.yaml
+        cache-dependency-path: ./backend/pnpm-lock.yaml
 
     - name: Install backend dependencies
       run: pnpm --dir ./backend install
