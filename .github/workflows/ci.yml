@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Setup pnpm
       uses: pnpm/action-setup@v4
@@ -45,11 +45,11 @@ jobs:
         version: 10
 
     - name: Use Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '22'
         cache: 'pnpm'
-        cache-dependency-path: backend/pnpm-lock.yaml
+#        cache-dependency-path: backend/pnpm-lock.yaml
 
     - name: Install backend dependencies
       run: pnpm --dir ./backend install
