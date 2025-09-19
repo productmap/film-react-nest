@@ -1,27 +1,21 @@
-name: CD
+name: CD Pipeline
 
 on:
   workflow_run:
-    workflows: [ "CI" ]
+    workflows: [ "CI Pipeline" ]
     types:
       - completed
+    branches:
+      - [ main, review-2 ]
 
 jobs:
-  debug:
-    # Временная задача для отладки. Она покажет нам, какие данные приходят от CI.
-    runs-on: ubuntu-latest
-    steps:
-      - name: Dump workflow_run context
-        env:
-          WORKFLOW_RUN_CONTEXT: ${{ toJSON(github.event.workflow_run) }}
-        run: echo "$WORKFLOW_RUN_CONTEXT"
-
   deploy:
     runs-on: ubuntu-latest
-    needs: debug # Запускаем после отладки
-    if: >
-      (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'review-2') &&
-      github.event.workflow_run.conclusion == 'success'
+#    if: >
+#      (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'review-2') &&
+#      github.event.workflow_run.conclusion == 'success'
+    # Запускаем деплой только если CI прошел успешно
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -44,52 +38,31 @@ jobs:
         with:
           yc-sa-json-credentials: ${{ secrets.YC_SA_KEY_JSON }}
 
-      - name: Build and push backend image
-        uses: docker/build-push-action@v4
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: true
-          tags: cr.yandex/${{ secrets.YC_REGISTRY_ID }}/film-react-nest-backend:${{ steps.vars.outputs.tag }}
-
-      - name: List files in root
-        # Отладочный шаг, чтобы убедиться, что Dockerfile.frontend.prod на месте
-        run: ls -la
-
-      - name: Build and push nginx image
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: ./Dockerfile.frontend.prod
-          push: true
-          tags: cr.yandex/${{ secrets.YC_REGISTRY_ID }}/film-react-nest-nginx:${{ steps.vars.outputs.tag }}
-
       - name: Deploy to server
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            # Выход при любой ошибке
-            set -e
-            # Переходим в директорию проекта
+            # Переходим в директорию с проектом на сервере
             cd ~/film-react-nest
-            # Загружаем последние изменения из репозитория (например, обновления docker-compose.yml)
-            git pull origin ${{ github.event.workflow_run.head_branch }}
-            # Экспортируем переменные для docker-compose
+            
+            # Экспортируем переменные окружения для docker-compose
             # Тэг образа, соответствующий ветке
             export IMAGE_TAG=${{ steps.vars.outputs.tag }}
+            
             # ID реестра, чтобы docker-compose мог составить полный путь к образу
             export YC_REGISTRY_ID=${{ secrets.YC_REGISTRY_ID }}
             
-            # Получаем временный IAM-токен для привязанного к ВМ сервисного аккаунта и логинимся в Docker.
-            # Это самый надежный способ аутентификации на сервере, который мы проверили вручную.
-            YC_IAM_TOKEN=$(/home/ubuntu/yandex-cloud/bin/yc iam create-token)
-            echo $YC_IAM_TOKEN | docker login --username iam --password-stdin cr.yandex
+            # Логинимся в Yandex Container Registry на сервере
+            echo '${{ secrets.YC_SA_JSON_CREDENTIALS }}' | docker login --username json_key --password-stdin cr.yandex
+            
             # Загружаем актуальные образы
             docker-compose -f docker-compose.yandex.yml --env-file ./.env pull
+            
             # Перезапускаем сервисы с новыми образами
-            docker-compose -f docker-compose.yandex.yml --env-file ./.env up -d
-            # Очищаем старые неиспользуемые образы, чтобы не занимать место
+            docker-compose -f docker-compose.yandex.yml --env-file ./.env up -d --remove-orphans
+            
+            # Очищаем старые, неиспользуемые образы
             docker image prune -f
