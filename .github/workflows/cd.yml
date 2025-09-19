@@ -14,6 +14,23 @@ jobs:
       github.event.workflow_run.conclusion == 'success' &&
       (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'review-2')
     steps:
+      - name: Checkout triggered workflow code
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.workflow_run.head_repository.full_name }}
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Copy compose file to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          source: |
+            docker-compose.yandex.yml
+            nginx/nginx.prod.conf
+          target: "~/film-react-nest"
+
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -23,22 +40,19 @@ jobs:
           script: |
             # Переходим в директорию с проектом на сервере
             cd ~/film-react-nest
-            
+
             # Экспортируем переменные окружения для docker-compose
-            # Тэг образа хэш мы использовали как тег для Docker-образа в CI
             export IMAGE_TAG=${{ github.event.workflow_run.head_sha }}
-            
-            # ID реестра, чтобы docker-compose мог составить полный путь к образу
             export YC_REGISTRY_ID=${{ secrets.YC_REGISTRY_ID }}
             
             # Логинимся в Yandex Container Registry на сервере
-            echo '${{ secrets.YC_SA_JSON_CREDENTIALS }}' | docker login --username json_key --password-stdin cr.yandex
+            echo '${{ secrets.YC_SA_KEY_JSON }}' | docker login --username json_key --password-stdin cr.yandex
             
             # Загружаем актуальные образы
-            docker-compose -f docker-compose.yandex.yml --env-file ./.env pull
+            docker compose -f docker-compose.yandex.yml pull
             
             # Перезапускаем сервисы с новыми образами
-            docker-compose -f docker-compose.yandex.yml --env-file ./.env up -d --remove-orphans
+            docker compose -f docker-compose.yandex.yml up -d --remove-orphans
             
             # Очищаем старые, неиспользуемые образы
             docker image prune -f
