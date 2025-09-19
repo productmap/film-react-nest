@@ -6,7 +6,7 @@ on:
     types:
       - completed
     branches:
-      - [ main, review-2 ]
+      - review-2
 
 jobs:
   deploy:
