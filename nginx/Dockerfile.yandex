@@ -1,5 +1,5 @@
 # Этот Dockerfile предназначен для сборки единого production-образа,
-# содержащего и собранный фронтенд, и настроенный Nginx для его раздачи.
+# содержащего фронтенд и Nginx для его раздачи.
 
 # ---- Этап 1: Сборка фронтенда (Builder) ----
 # Используем pnpm, как и в бэкенде, для консистентности
@@ -32,14 +32,13 @@ RUN pnpm run build
 # ---- Этап 2: Продакшен Nginx ----
 FROM nginx:latest
 
-# Копируем специальную конфигурацию Nginx для продакшена
+# Копируем нашу конфигурацию
 COPY nginx/nginx.prod.conf /etc/nginx/conf.d/default.conf
 
 # Копируем собранные статические файлы фронтенда из этапа сборки
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
 
-# Копируем статичные изображения (афиша), которые раньше раздавались бэкендом.
-# В проде Nginx справится с этим гораздо эффективнее.
+# Копируем статику бекенда
 COPY backend/public/content/afisha /usr/share/nginx/html/content/afisha
 
 

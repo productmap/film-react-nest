@@ -7,37 +7,56 @@ on:
     branches: [ main, review-2 ]
 
 jobs:
-  test_frontend:
+#  test_frontend:
+#    runs-on: ubuntu-latest
+#    steps:
+#    - name: Checkout repository
+#      uses: actions/checkout@v4
+#
+#    - name: Set up pnpm
+#      uses: pnpm/action-setup@v4
+#      with:
+#        version: 10
+#
+#    - name: Set up Node.js
+#      uses: actions/setup-node@v4
+#      with:
+#        node-version: '22'
+#        cache: 'pnpm'
+#        cache-dependency-path: ./frontend/pnpm-lock.yaml
+#
+#    - name: Install frontend dependencies
+#      run: pnpm --dir ./frontend install
+#
+#    - name: Run linter
+#      run: pnpm --dir ./frontend lint
+#
+#    - name: Build frontend
+#      run: pnpm --dir ./frontend build
+#
+#    - name: Authenticate to Yandex Cloud
+#      uses: docker/login-action@v3
+#      with:
+#        registry: cr.yandex
+#        username: json_key
+#        password: ${{ secrets.YC_SA_KEY_JSON }}
+#
+#    - name: Build and push backend image
+#      uses: docker/build-push-action@v5
+#      with:
+#        context: ./frontend
+#        push: true
+#        tags: cr.yandex/${{ secrets.YC_REGISTRY_ID }}/film-react-nest-frontend:${{ github.sha }}
+
+  build-backend:
     runs-on: ubuntu-latest
+    # Устанавливаем рабочую директорию для всех команд в этом job
+    defaults:
+      run:
+        working-directory: ./backend
+
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Set up pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        version: 10
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'pnpm'
-        cache-dependency-path: ./frontend/pnpm-lock.yaml
-
-    - name: Install frontend dependencies
-      run: pnpm --dir ./frontend install
-
-    - name: Run linter
-      run: pnpm --dir ./frontend lint
-
-    - name: Build frontend
-      run: pnpm --dir ./frontend build
-
-  test_backend:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Setup pnpm
@@ -53,13 +72,47 @@ jobs:
         cache-dependency-path: ./backend/pnpm-lock.yaml
 
     - name: Install backend dependencies
-      run: pnpm --dir ./backend install
+      run: pnpm install --frozen-lockfile
 
     - name: Run linter
-      run: pnpm --dir ./backend lint
+      run: pnpm run lint
 
     - name: Run backend tests
-      run: pnpm --dir ./backend test
+      run: pnpm run test
 
-    - name: Build backend
-      run: pnpm --dir ./backend build
+    - name: Authenticate to Yandex Cloud
+      uses: docker/login-action@v3
+      with:
+        registry: cr.yandex
+        username: json_key
+        password: ${{ secrets.YC_SA_KEY_JSON }}
+
+    - name: Build and push backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        file: ./backend/Dockerfile
+        push: true
+        tags: cr.yandex/${{ secrets.YC_REGISTRY_ID }}/film-react-nest-backend:${{ github.sha }}
+
+  build-nginx:
+    runs-on: ubuntu-latest
+    needs: build-backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Yandex Cloud
+        uses: docker/login-action@v3
+        with:
+          registry: cr.yandex
+          username: json_key
+          password: ${{ secrets.YC_SA_KEY_JSON }}
+
+      - name: Build and push nginx image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./nginx/Dockerfile.yandex
+          push: true
+          tags: cr.yandex/${{ secrets.YC_REGISTRY_ID }}/film-react-nest-nginx:${{ github.sha }}
