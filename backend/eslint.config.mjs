@@ -39,8 +39,7 @@ export default [
 
       parserOptions: {
         project: 'tsconfig.json',
-        tsconfigRootDir:
-          '/Users/fascodesigner/Documents/Курсы/Yandex.Praktikum/Full-stack/film-react-nest/backend',
+        tsconfigRootDir: __dirname,
       },
     },
 
