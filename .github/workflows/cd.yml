@@ -20,6 +20,9 @@ jobs:
           repository: ${{ github.event.workflow_run.head_repository.full_name }}
           ref: ${{ github.event.workflow_run.head_sha }}
 
+      - name: Debug - List files in workspace
+        run: ls -R
+
       - name: Copy compose file to server
         uses: appleboy/scp-action@v0.1.7
         with:
