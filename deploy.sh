@@ -75,16 +75,20 @@ APP_ENV_CONTENT=$(grep -vE '^(VM_NAME|SA_NAME|GIT_REPO_URL|SSH_KEY_PATH|VM_USER)
 
 # --- НАСТРОЙКА СЕРВЕРА И ДЕПЛОЙ --- #
 echo "### Подключение к ВМ и запуск настройки..."
-ssh -o "StrictHostKeyChecking no" ${VM_USER}@${VM_PUBLIC_IP} \
-  "GIT_REPO_URL='${GIT_REPO_URL}' PROJECT_DIR='${PROJECT_DIR}' APP_ENV_CONTENT='${APP_ENV_CONTENT}' bash -s" \
+# Определяем путь к приватному ключу, удаляя .pub из пути к публичному.
+# Это делает скрипт более надежным, так как он не зависит от ssh-agent.
+SSH_PRIVATE_KEY_PATH=$(echo "${SSH_KEY_PATH}" | sed 's/\.pub$//')
+
+ssh -o "StrictHostKeyChecking no" -i "${SSH_PRIVATE_KEY_PATH}" ${VM_USER}@${VM_PUBLIC_IP} \
+  "PROJECT_DIR='${PROJECT_DIR}' APP_ENV_CONTENT='${APP_ENV_CONTENT}' bash -s" \
   << 'EOF'
   # Выход при любой ошибке внутри SSH сессии
   set -e
 
-  echo "### Обновление пакетов..."
+  echo "### Обновление пакетов на ВМ..."
   sudo apt update && sudo apt upgrade -y
 
-  echo "### Установка Docker, Docker Compose, Git и YC CLI..."
+  echo "### Установка Docker, Docker Compose (plugin), Git и YC CLI..."
   sudo apt install -y apt-transport-https ca-certificates curl software-properties-common git jq lsb-release
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
   sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
@@ -92,33 +96,38 @@ ssh -o "StrictHostKeyChecking no" ${VM_USER}@${VM_PUBLIC_IP} \
   # Добавляем yc в PATH для текущей сессии
   export PATH="/home/${USER}/yandex-cloud/bin:$PATH"
   sudo apt update
-  sudo apt install -y docker-ce
+  sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
   sudo systemctl start docker
   sudo systemctl enable docker
   sudo usermod -aG docker ${USER}
-  sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-  sudo chmod +x /usr/local/bin/docker-compose
 
-  echo "### Клонирование репозитория..."
-  git clone "${GIT_REPO_URL}"
+  echo "### Создание директории проекта на ВМ..."
+  mkdir -p "${PROJECT_DIR}"
   cd "${PROJECT_DIR}"
 
   echo "### Создание .env файла на сервере..."
   echo "${APP_ENV_CONTENT}" | base64 -d > .env
 
   echo "### Первоначальная настройка сервера завершена!"
-  echo "### Теперь необходимо настроить секреты в GitHub и на сервере."
+  echo "### Теперь необходимо настроить секреты в GitHub для запуска CI/CD."
 EOF
 
 # --- ИНСТРУКЦИИ ДЛЯ ПОЛЬЗОВАТЕЛЯ --- #
 echo "================================================================"
 echo "СКРИПТ ЗАВЕРШЕН. НЕОБХОДИМЫ СЛЕДУЮЩИЕ РУЧНЫЕ ДЕЙСТВИЯ:"
 echo "================================================================"
-echo "1. Настройте CI/CD: Добавьте необходимые секреты в ваш GitHub-репозиторий (см. yandex_cloud_deployment.md)."
+echo "1. Настройте секреты в GitHub для CI/CD:"
+echo "   Перейдите в 'Settings' -> 'Secrets and variables' -> 'Actions' вашего репозитория."
+echo "   Создайте следующие 'Repository secrets':"
+echo "   - YC_SA_KEY_JSON: Содержимое вашего JSON-файла с ключом сервисного аккаунта."
+echo "   - YC_REGISTRY_ID: ID вашего Container Registry в Yandex Cloud."
+echo "   - SSH_HOST: IP-адрес вашей ВМ: ${VM_PUBLIC_IP}"
+echo "   - SSH_USERNAME: Имя пользователя на ВМ: ${VM_USER}"
+echo "   - SSH_KEY: Содержимое вашего *приватного* SSH-ключа (файл без .pub)."
 echo ""
 echo "2. Настройте DNS: Создайте A-запись для вашего домена, указывающую на IP: ${VM_PUBLIC_IP}"
 echo ""
-echo "3. Запустите первый деплой: Сделайте коммит и пуш в ветку 'main'."
+echo "3. Запустите первый деплой: Сделайте коммит и пуш в ветку 'main' или 'review-2'."
 echo ""
 echo "4. Настройте SSL: После первого успешного деплоя и настройки DNS, подключитесь к ВМ и выполните:"
 echo "   ssh ${VM_USER}@${VM_PUBLIC_IP}"

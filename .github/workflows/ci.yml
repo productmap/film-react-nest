@@ -2,54 +2,11 @@ name: CI Pipeline
 
 on:
   push:
-    branches:
-    - review-2
+    branches: [ review-2 ]
   pull_request:
-    branches:
-    - review-2
+    branches: [ review-2 ]
 
 jobs:
-  #  test_frontend:
-  #    runs-on: ubuntu-latest
-  #    steps:
-  #    - name: Checkout repository
-  #      uses: actions/checkout@v4
-  #
-  #    - name: Set up pnpm
-  #      uses: pnpm/action-setup@v4
-  #      with:
-  #        version: 10
-  #
-  #    - name: Set up Node.js
-  #      uses: actions/setup-node@v4
-  #      with:
-  #        node-version: '22'
-  #        cache: 'pnpm'
-  #        cache-dependency-path: ./frontend/pnpm-lock.yaml
-  #
-  #    - name: Install frontend dependencies
-  #      run: pnpm --dir ./frontend install
-  #
-  #    - name: Run linter
-  #      run: pnpm --dir ./frontend lint
-  #
-  #    - name: Build frontend
-  #      run: pnpm --dir ./frontend build
-  #
-  #    - name: Authenticate to Yandex Cloud
-  #      uses: docker/login-action@v3
-  #      with:
-  #        registry: cr.yandex
-  #        username: json_key
-  #        password: ${{ secrets.YC_SA_KEY_JSON }}
-  #
-  #    - name: Build and push backend image
-  #      uses: docker/build-push-action@v5
-  #      with:
-  #        context: ./frontend
-  #        push: true
-  #        tags: cr.yandex/${{ secrets.YC_REGISTRY_ID }}/film-react-nest-frontend:${{ github.sha }}
-
   build-backend:
     runs-on: ubuntu-latest
     # Устанавливаем рабочую директорию для всех команд в этом job
@@ -118,9 +75,3 @@ jobs:
           file: ./nginx/Dockerfile.yandex
           push: true
           tags: cr.yandex/${{ secrets.YC_REGISTRY_ID }}/film-react-nest-nginx:${{ github.sha }}
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: project-files
-          path: .

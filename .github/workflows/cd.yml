@@ -9,51 +9,119 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: >
-      github.event.workflow_run.conclusion == 'success' &&
-      (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'review-2')
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'review-2'
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: project-files
-          # The artifact is downloaded from the workflow run that triggered this workflow
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ github.event.workflow_run.id }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Copy compose file to server
-        uses: appleboy/scp-action@v0.1.7
+      - name: Install Yandex Cloud CLI
+        uses: okar1/yc-cli-install@master
         with:
-          host: ${{ secrets.SSH_HOST }}
+          SA_KEY: ${{ secrets.YC_SA_KEY_JSON }}
+
+      - name: Authenticate to Yandex Cloud
+        run: |
+          echo '${{ secrets.YC_SA_KEY_JSON }}' > sa-key.json
+          yc config profile create deploy-profile
+          yc config set service-account-key sa-key.json
+          yc config set folder-id ${{ secrets.YC_FOLDER_ID }}
+          yc config set compute-default-zone ${{ secrets.YC_ZONE_ID }}
+          yc config set compute-default-subnet-id ${{ secrets.YC_SUBNET_ID }}
+
+      - name: Create or update VM
+        id: vm
+        run: |
+          # Проверяем, существует ли ВМ (по имени, например 'film-nest-vm')
+          VM_NAME="film-nest-vm"
+          if yc compute instance exists $VM_NAME; then
+            echo "VM exists, updating..."
+            yc compute instance update $VM_NAME --image-id fd80mrhj8fl2oe87o4e1  # ID Container Optimized Image
+          else
+            echo "Creating new VM..."
+            yc compute instance create \
+              --name $VM_NAME \
+              --zone ${{ secrets.YC_ZONE_ID }} \
+              --network-interface subnet-id=${{ secrets.YC_SUBNET_ID }},nat-ip-version=ipv4 \
+              --resources memory=2GB,cores=2 \
+              --image-id fd80mrhj8fl2oe87o4e1  # ID Container Optimized Image из Marketplace
+            yc compute instance add-tag $VM_NAME --tag=deploy-ready
+          fi
+          # Ждём готовности ВМ
+          yc compute instance wait $VM_NAME --state=running
+          # Получаем внешний IP
+          EXTERNAL_IP=$(yc compute instance get $VM_NAME --format json | jq -r '.network_interfaces[0].nat_ip_address')
+          echo "external_ip=$EXTERNAL_IP" >> $GITHUB_OUTPUT
+
+      - name: Update CloudFlare DNS A Record
+        run: |
+          ZONE_ID="${{ secrets.CLOUDFLARE_ZONE_ID }}"
+          RECORD_NAME="${{ secrets.CLOUDFLARE_DNS_RECORD_NAME }}"
+          API_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN }}"
+          NEW_IP="${{ steps.vm.outputs.external_ip }}"
+          
+          # Получаем ID существующей A-записи
+          RECORD_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=$RECORD_NAME&type=A" \
+            -H "Authorization: Bearer $API_TOKEN" \
+            -H "Content-Type: application/json" | jq -r '.result[0].id')
+          
+          if [ "$RECORD_ID" != "null" ]; then
+            # Обновляем запись
+            curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
+              -H "Authorization: Bearer $API_TOKEN" \
+              -H "Content-Type: application/json" \
+              --data "{\"type\":\"A\",\"name\":\"$RECORD_NAME\",\"content\":\"$NEW_IP\",\"ttl\":1,\"proxied\":false}"
+          else
+            echo "Record not found, creating new..."
+            curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+              -H "Authorization: Bearer $API_TOKEN" \
+              -H "Content-Type: application/json" \
+              --data "{\"type\":\"A\",\"name\":\"$RECORD_NAME\",\"content\":\"$NEW_IP\",\"ttl\":1,\"proxied\":false}"
+          fi
+          echo "DNS updated to $NEW_IP"
+
+      - name: Copy files to VM and Deploy
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ steps.vm.outputs.external_ip }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          source: |
-            docker-compose.yandex.yml
-            nginx/nginx.prod.conf
-          target: "~/film-react-nest"
+          source: "docker-compose.yandex.yml,.env,postgres/"
+          target: "/home/${{ secrets.SSH_USERNAME }}/film-nest-prod"
 
-      - name: Deploy to server
-        uses: appleboy/ssh-action@v1.2.2
+      - name: Deploy to VM and setup Certbot
+        uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.SSH_HOST }}
+          host: ${{ steps.vm.outputs.external_ip }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            # Переходим в директорию с проектом на сервере
-            cd ~/film-react-nest
-
-            # Экспортируем переменные окружения для docker-compose
-            export IMAGE_TAG=${{ github.event.workflow_run.head_sha }}
-            export YC_REGISTRY_ID=${{ secrets.YC_REGISTRY_ID }}
-            
-            # Логинимся в Yandex Container Registry на сервере
+            # Аутентификация в Yandex Container Registry
             echo '${{ secrets.YC_SA_KEY_JSON }}' | docker login --username json_key --password-stdin cr.yandex
-            
-            # Загружаем актуальные образы
-            docker compose -f docker-compose.yandex.yml pull
-            
-            # Перезапускаем сервисы с новыми образами
-            docker compose -f docker-compose.yandex.yml up -d --remove-orphans
-            
-            # Очищаем старые, неиспользуемые образы
+
+            # Переход в директорию проекта
+            cd /home/${{ secrets.SSH_USERNAME }}/film-nest-prod
+
+            # Остановка и удаление существующих контейнеров
+            docker compose -f docker-compose.yandex.yml down
+
+            # Запуск сервисов
+            IMAGE_TAG=${{ github.sha }} docker compose -f docker-compose.yandex.yml up -d --no-start
+            docker compose -f docker-compose.yandex.yml start postgres mongo backend nginx
+
+            # Получение или обновление сертификатов через Certbot (используя DOMAIN_NAME из .env)
+            docker compose -f docker-compose.yandex.yml run --rm certbot certonly \
+              --webroot \
+              --webroot-path=/var/www/certbot \
+              --email "${{ secrets.CERTBOT_EMAIL }}" \
+              --agree-tos \
+              --no-eff-email \
+              -d "${{ secrets.DOMAIN_NAME }}"
+
+            # Перезапуск nginx
+            docker compose -f docker-compose.yml restart nginx
+
+            # Настройка cron для обновления сертификатов
+            echo "0 0,12 * * * root docker compose -f /home/${{ secrets.SSH_USERNAME }}/film-nest-prod/docker-compose.yandex.yml run --rm certbot renew --quiet && docker compose -f /home/${{ secrets.SSH_USERNAME }}/film-nest-prod/docker-compose.yandex.yml restart nginx" | sudo tee /etc/cron.d/certbot-renew
+
+            # Очистка старых образов
             docker image prune -f
