@@ -49,14 +49,26 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      # Монтируем сертификаты, созданные в Cloudflare, напрямую в контейнер
-      - /home/ubuntu/certs/cert.pem:/etc/ssl/certs/cert.pem:ro
-      - /home/ubuntu/certs/key.pem:/etc/ssl/private/key.pem:ro
+      # Общие тома для Certbot и Nginx
+      - certbot_certs:/etc/letsencrypt
+      - webroot_data:/var/www/certbot
     depends_on:
       - backend
     restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    # Просто определяем сервис, запускать будем вручную или по cron
+    volumes:
+      - certbot_certs:/etc/letsencrypt
+      - webroot_data:/var/www/certbot
+    depends_on:
+      - nginx
 
 volumes:
   pg_data:
   mongo_data:
   logs_data:
+  certbot_certs:
+  webroot_data:
