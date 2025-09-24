@@ -118,3 +118,9 @@ jobs:
           file: ./nginx/Dockerfile.yandex
           push: true
           tags: cr.yandex/${{ secrets.YC_REGISTRY_ID }}/film-react-nest-nginx:${{ github.sha }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-files
+          path: .

@@ -9,19 +9,17 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Запускаем деплой только если CI прошел успешно
     if: >
       github.event.workflow_run.conclusion == 'success' &&
       (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'review-2')
     steps:
-      - name: Checkout triggered workflow code
-        uses: actions/checkout@v4
+      - name: Download artifact
+        uses: actions/download-artifact@v4
         with:
-          repository: ${{ github.event.workflow_run.head_repository.full_name }}
-          ref: ${{ github.event.workflow_run.head_sha }}
-
-      - name: Debug - List files in workspace
-        run: ls -R
+          name: project-files
+          # The artifact is downloaded from the workflow run that triggered this workflow
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
 
       - name: Copy compose file to server
         uses: appleboy/scp-action@v0.1.7
