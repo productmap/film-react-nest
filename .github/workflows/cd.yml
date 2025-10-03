@@ -42,7 +42,7 @@ jobs:
               --cores 2 \
               --create-boot-disk image-id=fd80mrhj8fl2oe87o4e1,size=10GB \
               --service-account-name "${{ secrets.YC_SA_NAME }}"
-            yc compute instance add-tag "$VM_NAME" --tag=deploy-ready
+            yc compute instance add-labels "$VM_NAME" --labels=deploy-ready=true
           fi
           # Ждём готовности ВМ
           yc compute instance get "$VM_NAME"
