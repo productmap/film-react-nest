@@ -30,10 +30,10 @@ jobs:
         run: |
           VM_NAME="film-nest-vm"
           if yc compute instance get --name "$VM_NAME" >/dev/null 2>&1; then
-            echo "VM exists, updating..."
-            yc compute instance update $VM_NAME --image-id fd80mrhj8fl2oe87o4e1 # ID Container Optimized Image
-          else
-            echo "Creating new VM..."
+            echo "VM exists, recreating..."
+            yc compute instance delete --name "$VM_NAME"
+          fi
+          echo "Creating new VM..."
             yc compute instance create \
               --name "$VM_NAME" \
               --zone "${{ secrets.YC_ZONE_ID }}" \
@@ -44,10 +44,10 @@ jobs:
               --service-account-name "${{ secrets.YC_SA_NAME }}"
             yc compute instance add-labels "$VM_NAME" --labels=deploy-ready=true
           fi
-          # Ждём готовности ВМ
-          yc compute instance get "$VM_NAME"
-          # Получаем внешний IP (исправлено: wait вместо wait, и get для IP)
-          EXTERNAL_IP=$(yc compute instance get "$VM_NAME" --format json | jq -r '.network_interfaces[0].primary_address.one_to_one_nat.address')
+          echo "Waiting for VM to get ready and assign IP..."
+          sleep 15
+          # Получаем внешний IP
+          EXTERNAL_IP=$(yc compute instance get "$VM_NAME" --format json | jq -r '.network_interfaces[0].primary_v4_address.one_to_one_nat.address')
           echo "external_ip=$EXTERNAL_IP" >> "$GITHUB_OUTPUT"
 
       - name: Update CloudFlare DNS A Record
