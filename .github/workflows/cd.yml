@@ -34,16 +34,15 @@ jobs:
             yc compute instance delete --name "$VM_NAME"
           fi
           echo "Creating new VM..."
-            yc compute instance create \
-              --name "$VM_NAME" \
-              --zone "${{ secrets.YC_ZONE_ID }}" \
-              --network-interface subnet-id="${{ secrets.YC_SUBNET_ID }}",nat-ip-version=ipv4 \
-              --memory 2 \
-              --cores 2 \
-              --create-boot-disk image-id=fd80mrhj8fl2oe87o4e1,size=10GB \
-              --service-account-name "${{ secrets.YC_SA_NAME }}"
-            yc compute instance add-labels "$VM_NAME" --labels=deploy-ready=true
-          fi
+          yc compute instance create \
+            --name "$VM_NAME" \
+            --zone "${{ secrets.YC_ZONE_ID }}" \
+            --network-interface subnet-id="${{ secrets.YC_SUBNET_ID }}",nat-ip-version=ipv4 \
+            --memory 2 \
+            --cores 2 \
+            --create-boot-disk image-id=fd80mrhj8fl2oe87o4e1,size=10GB \
+            --service-account-name "${{ secrets.YC_SA_NAME }}"
+          yc compute instance add-labels "$VM_NAME" --labels=deploy-ready=true
           echo "Waiting for VM to get ready and assign IP..."
           sleep 15
           # Получаем внешний IP
