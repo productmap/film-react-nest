@@ -29,24 +29,26 @@ jobs:
         id: vm
         run: |
           VM_NAME="film-nest-vm"
-          if yc compute instance exists $VM_NAME; then
+          if yc compute instance get --name "$VM_NAME" >/dev/null 2>&1; then
             echo "VM exists, updating..."
-            yc compute instance update $VM_NAME --image-id fd80mrhj8fl2oe87o4e1  # ID Container Optimized Image
+            yc compute instance update $VM_NAME --image-id fd80mrhj8fl2oe87o4e1 # ID Container Optimized Image
           else
             echo "Creating new VM..."
             yc compute instance create \
-              --name $VM_NAME \
-              --zone ${{ secrets.YC_ZONE_ID }} \
-              --network-interface subnet-id=${{ secrets.YC_SUBNET_ID }},nat-ip-version=ipv4 \
-              --resources memory=2GB,cores=2 \
-              --image-id fd80mrhj8fl2oe87o4e1  # ID Container Optimized Image из Marketplace
-            yc compute instance add-tag $VM_NAME --tag=deploy-ready
+              --name "$VM_NAME" \
+              --zone "${{ secrets.YC_ZONE_ID }}" \
+              --network-interface subnet-id="${{ secrets.YC_SUBNET_ID }}",nat-ip-version=ipv4 \
+              --memory 2 \
+              --cores 2 \
+              --create-boot-disk image-id=fd80mrhj8fl2oe87o4e1,size=10GB \
+              --service-account-name "${{ secrets.YC_SA_NAME }}"
+            yc compute instance add-tag "$VM_NAME" --tag=deploy-ready
           fi
           # Ждём готовности ВМ
-          yc compute instance get $VM_NAME --wait-for running
+          yc compute instance get "$VM_NAME"
           # Получаем внешний IP (исправлено: wait вместо wait, и get для IP)
-          EXTERNAL_IP=$(yc compute instance get $VM_NAME --format json | jq -r '.network_interfaces[0].nat_ip_address')
-          echo "external_ip=$EXTERNAL_IP" >> $GITHUB_OUTPUT
+          EXTERNAL_IP=$(yc compute instance get "$VM_NAME" --format json | jq -r '.network_interfaces[0].primary_address.one_to_one_nat.address')
+          echo "external_ip=$EXTERNAL_IP" >> "$GITHUB_OUTPUT"
 
       - name: Update CloudFlare DNS A Record
         run: |
@@ -60,7 +62,7 @@ jobs:
             -H "Authorization: Bearer $API_TOKEN" \
             -H "Content-Type: application/json" | jq -r '.result[0].id')
           
-          if [ "$RECORD_ID" != "null" ]; then
+          if [ -n "$RECORD_ID" ]; then
             # Обновляем запись
             curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
               -H "Authorization: Bearer $API_TOKEN" \
@@ -101,8 +103,7 @@ jobs:
             docker compose -f docker-compose.yandex.yml down
 
             # Запуск сервисов
-            IMAGE_TAG=${{ github.sha }} docker compose -f docker-compose.yandex.yml up -d --no-start
-            docker compose -f docker-compose.yandex.yml start postgres mongo backend nginx
+            IMAGE_TAG=${{ github.sha }} docker compose -f docker-compose.yandex.yml up -d
 
             # Получение или обновление сертификатов через Certbot (используя DOMAIN_NAME из .env)
             docker compose -f docker-compose.yandex.yml run --rm certbot certonly \
@@ -114,10 +115,10 @@ jobs:
               -d "${{ secrets.DOMAIN_NAME }}"
 
             # Перезапуск nginx
-            docker compose -f docker-compose.yml restart nginx
+            docker compose -f docker-compose.yandex.yml restart nginx
 
             # Настройка cron для обновления сертификатов
             echo "0 0,12 * * * root docker compose -f /home/${{ secrets.SSH_USERNAME }}/film-nest-prod/docker-compose.yandex.yml run --rm certbot renew --quiet && docker compose -f /home/${{ secrets.SSH_USERNAME }}/film-nest-prod/docker-compose.yandex.yml restart nginx" | sudo tee /etc/cron.d/certbot-renew
 
-            # Очистка старых образов
-            docker image prune -f
+            # Очистка старых образов (более безопасная)
+            docker image prune -a -f --filter "label=stage=prod"
