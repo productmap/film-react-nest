@@ -103,10 +103,16 @@ jobs:
             mkdir -p /home/${{ secrets.SSH_USERNAME }}/film-nest-prod
             echo "### Docker installed and directory created successfully."
 
-      - name: DEBUG - Check current directory
+      - name: Create docker-compose.yandex.yml from secret
+        run: echo "${{ secrets.DOCKER_COMPOSE_YANDEX_YML }}" > docker-compose.yandex.yml
+
+      - name: Create .env file from secret
+        run: echo "${{ secrets.DOTENV }}" > .env
+
+      - name: Create postgres directory and init script
         run: |
-          pwd
-          ls -la
+          mkdir -p postgres
+          echo "${{ secrets.POSTGRES_INIT_SQL }}" > postgres/init.sql
 
       - name: Copy docker-compose.yandex.yml to VM
         uses: appleboy/scp-action@v0.1.4
@@ -134,15 +140,6 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           source: "postgres/"
           target: "/home/${{ secrets.SSH_USERNAME }}/film-nest-prod"
-
-      - name: "DEBUG: Show github context"
-        run: echo "${{ toJSON(github.event) }}"
-
-      - name: "DEBUG: List files before copy"
-        run: ls -la
-
-      - name: "DEBUG: List postgres dir content"
-        run: ls -la postgres/
 
       - name: Deploy to VM and setup Certbot
         uses: appleboy/ssh-action@v1.0.0
