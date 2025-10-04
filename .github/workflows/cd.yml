@@ -99,7 +99,9 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
             sudo usermod -aG docker ${{ secrets.SSH_USERNAME }}
-            echo "### Docker installed successfully."
+            echo "### Creating project directory..."
+            mkdir -p /home/${{ secrets.SSH_USERNAME }}/film-nest-prod
+            echo "### Docker installed and directory created successfully."
 
       - name: Copy files to VM and Deploy
         uses: appleboy/scp-action@v0.1.4
