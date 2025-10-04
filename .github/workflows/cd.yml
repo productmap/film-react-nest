@@ -40,7 +40,7 @@ jobs:
             --network-interface subnet-id="${{ secrets.YC_SUBNET_ID }}",nat-ip-version=ipv4 \
             --memory 2 \
             --cores 2 \
-            --create-boot-disk image-family=ubuntu-2204-lts,size=10GB \
+            --create-boot-disk image-folder-id=standard-images,image-family=ubuntu-2204-lts,size=10GB \
             --service-account-name "${{ secrets.YC_SA_NAME }}"
           yc compute instance add-labels "$VM_NAME" --labels=deploy-ready=true
           echo "Waiting 60 seconds for VM to boot and SSH server to start..."
