@@ -79,6 +79,28 @@ jobs:
           fi
           echo "DNS updated to $NEW_IP"
 
+      - name: Install Docker on VM
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ steps.vm.outputs.external_ip }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            echo "### Installing Docker and Docker Compose plugin..."
+            sudo apt-get update
+            sudo apt-get install -y ca-certificates curl
+            sudo install -m 0755 -d /etc/apt/keyrings
+            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+            sudo chmod a+r /etc/apt/keyrings/docker.asc
+            echo \
+              "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+              $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+              sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update
+            sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            sudo usermod -aG docker ${{ secrets.SSH_USERNAME }}
+            echo "### Docker installed successfully."
+
       - name: Copy files to VM and Deploy
         uses: appleboy/scp-action@v0.1.4
         with:
