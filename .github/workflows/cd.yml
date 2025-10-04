@@ -103,13 +103,31 @@ jobs:
             mkdir -p /home/${{ secrets.SSH_USERNAME }}/film-nest-prod
             echo "### Docker installed and directory created successfully."
 
-      - name: Copy files to VM and Deploy
+      - name: Copy docker-compose.yandex.yml to VM
         uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ steps.vm.outputs.external_ip }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          source: "docker-compose.yandex.yml,.env,postgres/"
+          source: "docker-compose.yandex.yml"
+          target: "/home/${{ secrets.SSH_USERNAME }}/film-nest-prod"
+
+      - name: Copy .env to VM
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ steps.vm.outputs.external_ip }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          source: ".env"
+          target: "/home/${{ secrets.SSH_USERNAME }}/film-nest-prod"
+
+      - name: Copy postgres directory to VM
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ steps.vm.outputs.external_ip }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "postgres/"
           target: "/home/${{ secrets.SSH_USERNAME }}/film-nest-prod"
 
       - name: Deploy to VM and setup Certbot
