@@ -42,7 +42,7 @@ jobs:
             --cores 2 \
             --create-boot-disk image-folder-id=standard-images,image-family=ubuntu-2204-lts,size=10GB \
             --service-account-name "${{ secrets.YC_SA_NAME }}" \
-            --metadata "ssh-keys=${{ secrets.SSH_USERNAME }}:${{ secrets.SSH_KEY }}"
+            --metadata "ssh-keys=${{ secrets.SSH_USERNAME }}:${{ secrets.SSH_PUBLIC_KEY }}"
           yc compute instance add-labels "$VM_NAME" --labels=deploy-ready=true
           echo "Waiting 60 seconds for VM to boot and SSH server to start..."
           sleep 60
