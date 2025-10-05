@@ -1,0 +1,124 @@
+name: IaC Pipeline
+
+on:
+  workflow_dispatch:
+
+jobs:
+  yc-infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Yandex Cloud CLI
+        uses: okar1/yc-cli-install@master
+        with:
+          SA_KEY: ${{ secrets.YC_SA_KEY_JSON }}
+
+      - name: Configure Yandex Cloud Profile
+        run: |
+          yc config set folder-id ${{ secrets.YC_FOLDER_ID }}
+          yc config set compute-default-zone ${{ secrets.YC_ZONE_ID }}
+          yc version
+
+      - name: Create or get VM
+        id: vm
+        run: |
+          VM_NAME="film-nest-vm"
+          if yc compute instance get --name "$VM_NAME" >/dev/null 2>&1; then
+            echo "VM already exists. Getting its IP."
+            EXTERNAL_IP=$(yc compute instance get "$VM_NAME" --format json | jq -r '.network_interfaces[0].primary_v4_address.one_to_one_nat.address')
+          else
+            echo "Creating new VM..."
+            yc compute instance create \
+              --name "$VM_NAME" \
+              --zone "${{ secrets.YC_ZONE_ID }}" \
+              --network-interface subnet-id="${{ secrets.YC_SUBNET_ID }}",nat-ip-version=ipv4 \
+              --memory 2 \
+              --cores 2 \
+              --create-boot-disk image-folder-id=standard-images,image-family=ubuntu-2204-lts,size=10GB \
+              --service-account-name "${{ secrets.YC_SA_NAME }}" \
+              --metadata "ssh-keys=${{ secrets.SSH_USERNAME }}:${{ secrets.SSH_PUBLIC_KEY }}"
+            yc compute instance add-labels "$VM_NAME" --labels=deploy-ready=true
+            echo "Waiting 90 seconds for VM to boot and SSH server to start..."
+            sleep 90
+            EXTERNAL_IP=$(yc compute instance get "$VM_NAME" --format json | jq -r '.network_interfaces[0].primary_v4_address.one_to_one_nat.address')
+          fi
+          echo "external_ip=$EXTERNAL_IP" >> "$GITHUB_OUTPUT"
+
+      - name: Update CloudFlare DNS A Record
+        run: |
+          set -e
+          ZONE_ID="${{ secrets.CLOUDFLARE_ZONE_ID }}"
+          RECORD_NAME="${{ secrets.CLOUDFLARE_DNS_RECORD_NAME }}"
+          API_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN }}"
+          NEW_IP="${{ steps.vm.outputs.external_ip }}"
+          
+          # Получаем информацию о записи
+          DNS_RECORD_INFO=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?type=A&name=$RECORD_NAME" \
+            -H "Authorization: Bearer $API_TOKEN" \
+            -H "Content-Type: application/json")
+
+          RECORD_ID=$(echo "$DNS_RECORD_INFO" | jq -r '.result[0].id // ""')
+          RECORD_IP=$(echo "$DNS_RECORD_INFO" | jq -r '.result[0].content // ""')
+
+          if [ -n "$RECORD_ID" ]; then
+            if [ "$RECORD_IP" == "$NEW_IP" ]; then
+              echo "DNS record is already up to date."
+            else
+              echo "Updating existing DNS record..."
+              curl -s -X PATCH "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
+                -H "Authorization: Bearer $API_TOKEN" \
+                -H "Content-Type: application/json" \
+                --data "{\"type\":\"A\",\"name\":\"$RECORD_NAME\",\"content\":\"$NEW_IP\",\"ttl\":1,\"proxied\":false}"
+              echo "DNS updated to $NEW_IP"
+            fi
+          else
+            echo "DNS record not found, creating new one..."
+            curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+              -H "Authorization: Bearer $API_TOKEN" \
+              -H "Content-Type: application/json" \
+              --data "{\"type\":\"A\",\"name\":\"$RECORD_NAME\",\"content\":\"$NEW_IP\",\"ttl\":1,\"proxied\":false}"
+            echo "DNS created with IP $NEW_IP"
+          fi
+
+      - name: Setup VM (Install Docker, Certbot)
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ steps.vm.outputs.external_ip }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            echo "### Installing Docker and Docker Compose plugin..."
+            sudo apt-get update
+            sudo apt-get install -y ca-certificates curl
+            sudo install -m 0755 -d /etc/apt/keyrings
+            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+            sudo chmod a+r /etc/apt/keyrings/docker.asc
+            echo \
+              "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+              $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+              sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update
+            sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            sudo usermod -aG docker ${{ secrets.SSH_USERNAME }}
+            
+            echo "### Creating project directory..."
+            mkdir -p /home/${{ secrets.SSH_USERNAME }}/film-nest-prod
+            
+            echo "### Installing Certbot..."
+            sudo apt-get install -y certbot
+            
+            echo "### Obtaining initial SSL certificate..."
+            # Временно останавливаем сервисы, которые могут занимать 80 порт
+            sudo systemctl stop nginx || true
+            # Получаем сертификат
+            sudo certbot certonly --standalone -d "${{ secrets.CLOUDFLARE_DNS_RECORD_NAME }}" \
+              --email "${{ secrets.CERTBOT_EMAIL }}" --agree-tos --no-eff-email
+            
+            echo "### Setup cron for certbot renewal..."
+            # echo "0 12 * * * root certbot renew --quiet" | sudo tee /etc/cron.d/certbot-renew
+            # Обновляем cron, чтобы он перезапускал Docker-контейнер nginx
+            echo "0 12 * * * root certbot renew --quiet && docker compose -f /home/${{ secrets.SSH_USERNAME }}/film-nest-prod/docker-compose.yandex.yml restart nginx" | sudo tee /etc/cron.d/certbot-renew
+            
+            echo "### VM setup complete."
