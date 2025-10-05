@@ -46,14 +46,12 @@ jobs:
 
       - name: Copy project files to VM
         uses: appleboy/scp-action@v0.1.4
-        env:
-          REMOTE_USER: ${{ secrets.SSH_USERNAME }}
         with:
           host: ${{ steps.vm.outputs.external_ip }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           source: "docker-compose.yandex.yml,.env,postgres/,nginx/"
-          target: "/home/$REMOTE_USER/film-nest-prod"
+          target: "/home/ubuntu/film-nest-prod"
 
       - name: Deploy to VM
         uses: appleboy/ssh-action@v1.0.0
