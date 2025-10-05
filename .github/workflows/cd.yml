@@ -12,7 +12,7 @@ jobs:
     if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'review-2'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Yandex Cloud CLI
         uses: okar1/yc-cli-install@master
@@ -42,15 +42,14 @@ jobs:
           echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
           echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> .env
           echo "DATABASE_DRIVER=postgres" >> .env
-          # Добавьте сюда остальные переменные из .env.example
 
       - name: Copy project files to VM
-        uses: appleboy/scp-action@v0.1.4
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ steps.vm.outputs.external_ip }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          source: "docker-compose.yandex.yml,.env,postgres/,nginx/"
+          source: "docker-compose.yandex.yml,postgres/,nginx/"
           target: "/home/ubuntu/film-nest-prod"
 
       - name: Deploy to VM
