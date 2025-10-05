@@ -28,6 +28,7 @@ jobs:
           if yc compute instance get --name "$VM_NAME" >/dev/null 2>&1; then
             echo "VM already exists. Getting its IP."
             EXTERNAL_IP=$(yc compute instance get "$VM_NAME" --format json | jq -r '.network_interfaces[0].primary_v4_address.one_to_one_nat.address')
+            echo "VM IP: $EXTERNAL_IP"
           else
             echo "Creating new VM..."
             yc compute instance create \
@@ -43,6 +44,7 @@ jobs:
             echo "Waiting 90 seconds for VM to boot and SSH server to start..."
             sleep 90
             EXTERNAL_IP=$(yc compute instance get "$VM_NAME" --format json | jq -r '.network_interfaces[0].primary_v4_address.one_to_one_nat.address')
+            echo "New VM IP: $EXTERNAL_IP"
           fi
           echo "external_ip=$EXTERNAL_IP" >> "$GITHUB_OUTPUT"
 
