@@ -102,10 +102,23 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
             sudo usermod -aG docker ${{ secrets.SSH_USERNAME }}
+            
             echo "### Creating project directory..."
             mkdir -p /home/${{ secrets.SSH_USERNAME }}/film-nest-prod
+            
             echo "### Installing Certbot..."
-            sudo apt-get install -y certbot python3-certbot-nginx
+            sudo apt-get install -y certbot
+            
+            echo "### Obtaining initial SSL certificate..."
+            # Временно останавливаем сервисы, которые могут занимать 80 порт
+            sudo systemctl stop nginx || true
+            # Получаем сертификат
+            sudo certbot certonly --standalone -d "${{ secrets.CLOUDFLARE_DNS_RECORD_NAME }}" \
+              --email "${{ secrets.CERTBOT_EMAIL }}" --agree-tos --no-eff-email
+            
             echo "### Setup cron for certbot renewal..."
-            echo "0 12 * * * root certbot renew --quiet" | sudo tee /etc/cron.d/certbot-renew
+            # echo "0 12 * * * root certbot renew --quiet" | sudo tee /etc/cron.d/certbot-renew
+            # Обновляем cron, чтобы он перезапускал Docker-контейнер nginx
+            echo "0 12 * * * root certbot renew --quiet && docker compose -f /home/${{ secrets.SSH_USERNAME }}/film-nest-prod/docker-compose.yandex.yml restart nginx" | sudo tee /etc/cron.d/certbot-renew
+            
             echo "### VM setup complete."
