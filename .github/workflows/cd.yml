@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Install Yandex Cloud CLI
         uses: okar1/yc-cli-install@master
@@ -50,7 +52,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           source: "docker-compose.yandex.yml,postgres/,nginx/"
-          target: "test"
+          target: "/home/ubuntu/film-nest-prod"
 
       - name: Deploy to VM
         uses: appleboy/ssh-action@v1.0.0
