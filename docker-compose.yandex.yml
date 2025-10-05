@@ -49,26 +49,16 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      # Общие тома для Certbot и Nginx
-      - certbot_certs:/etc/letsencrypt
-      - webroot_data:/var/www/certbot
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
     depends_on:
       - backend
+      - frontend
     restart: unless-stopped
 
-  certbot:
-    image: certbot/certbot
-    container_name: certbot
-    # Просто определяем сервис, запускать будем вручную или по cron
-    volumes:
-      - certbot_certs:/etc/letsencrypt
-      - webroot_data:/var/www/certbot
-    depends_on:
-      - nginx
 
 volumes:
   pg_data:
   mongo_data:
   logs_data:
-  certbot_certs:
-  webroot_data:
