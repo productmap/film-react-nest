@@ -1,5 +1,7 @@
 # Проект FILM!
 
+Доступен по адресу [https://film.productmap.ru/](https://film.productmap.ru/)
+
 ![Скриншот приложения](doc/app_screenshot.png)
 
 ## Описание проекта
