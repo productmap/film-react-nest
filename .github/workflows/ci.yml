@@ -9,11 +9,9 @@ on:
 jobs:
   build-backend:
     runs-on: ubuntu-latest
-    # Устанавливаем рабочую директорию для всех команд в этом job
     defaults:
       run:
         working-directory: ./backend
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -75,3 +73,6 @@ jobs:
           file: ./nginx/Dockerfile.yandex
           push: true
           tags: cr.yandex/${{ secrets.YC_REGISTRY_ID }}/film-react-nest-nginx:${{ github.sha }}
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+            VITE_CDN_URL=${{ secrets.VITE_CDN_URL }}
